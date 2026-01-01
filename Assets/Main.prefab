@@ -320,7 +320,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1052692653
+  GlobalObjectIdHash: 3120032765
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -489,10 +489,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cdc3405affc441d40aa321b1e2900d4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClubEquipOnStart
-  gripPivot: {fileID: 0}
   clubPrefab: {fileID: 4200646916718582470, guid: 95ae20b0fdc933c43b02ca0bb31fd25a, type: 3}
-  gc: {fileID: 0}
-  link: {fileID: 4182380670424442734}
 --- !u!114 &4182380670424442734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -522,6 +519,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HandRigSpawner
   ShowTopMostFoldoutHeaderGroup: 1
   handRigPrefab: {fileID: 1617282092700432843, guid: 01d5e202c9f3a574c912bf96ed3645f1, type: 3}
+  bodyAnchorTag: BodyAnchorPivot
 --- !u!1 &4339547246322372314
 GameObject:
   m_ObjectHideFlags: 0

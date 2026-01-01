@@ -76,10 +76,6 @@ public class GolfStanceController : NetworkBehaviour
                 if (!grip)
                     grip = rigId.GetComponent<GripInertiaFollower>();
 
-                // 2) Swing pivot driver may live on HandRig too (or child)
-                if (!swingPivotDriver)
-                    swingPivotDriver = rigId.GetComponentInChildren<SwingPivotMouseRotate>(true);
-
                 // Helpful debug
                 // Debug.Log($"[GolfStanceController] Bound HandRig: grip={(grip ? "OK" : "NULL")} swing={(swingPivotDriver ? "OK" : "NULL")}");
 
