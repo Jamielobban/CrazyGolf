@@ -3,6 +3,7 @@ using UnityEngine;
 public class ClubEquipOnStart : MonoBehaviour
 {
     [SerializeField] private GameObject clubPrefab; 
+    [SerializeField] private GolferContextLink link;
  
     void Start()
     {
@@ -12,13 +13,16 @@ public class ClubEquipOnStart : MonoBehaviour
             Debug.LogError("[ClubEquipOnStart] No local HandRig/gripPivot.");
             return;
         }
-
+        if (!link) link = GetComponentInParent<GolferContextLink>();
         Equip(rigId.gripPivot);
     }
 
     void Equip(Transform gripPivot)
     {
         GameObject club = Instantiate(clubPrefab);
+
+        var gc = club.GetComponent<GolfClub>();
+        if (gc && link) link.SetEquippedClub(gc);
 
         // Parent first, keep world pose for now
         club.transform.SetParent(gripPivot, true);
