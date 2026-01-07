@@ -1,9 +1,3 @@
-// GolfStanceController.cs
-// - Owner-only.
-// - Finds the LOCAL HandRig (spawned separately) and wires:
-//    grip (GripInertiaFollower) + swingPivotDriver (SwingPivotMouseRotate)
-// - Uses a small coroutine retry in case the HandRig spawns a few frames later.
-
 using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -15,17 +9,17 @@ public class GolfStanceController : NetworkBehaviour
     [Header("Refs")]
     [SerializeField] private NetworkRigidbodyPlayer movement;
 
-    // These come from the HandRig (spawned separately)
+    // Comes from the NetworkHandRig (spawned by server)
     [SerializeField] private GripInertiaFollower grip;
     [SerializeField] private SwingPivotMouseRotate swingPivotDriver;
 
     [Header("Targets (player)")]
     [SerializeField] private Transform fpsFollow;
     [SerializeField] private Transform swingFollow;
-    [SerializeField] private Transform walkLookPoint; // can be null
+    [SerializeField] private Transform walkLookPoint;
     [SerializeField] private Transform hitPoint;
 
-    [Header("Blend Times (match CinemachineBrain custom blends)")]
+    [Header("Blend Times")]
     [SerializeField] private float walkToSwingBlend = 0.25f;
     [SerializeField] private float swingToWalkBlend = 0.15f;
 
@@ -46,8 +40,8 @@ public class GolfStanceController : NetworkBehaviour
             return;
         }
 
-        if (movement == null) movement = GetComponent<NetworkRigidbodyPlayer>();
-        rig = movement != null ? movement.LocalRig : null;
+        if (!movement) movement = GetComponent<NetworkRigidbodyPlayer>();
+        rig = movement ? movement.LocalRig : null;
 
         input = new PlayerInputActions();
         input.Enable();
@@ -55,38 +49,10 @@ public class GolfStanceController : NetworkBehaviour
         input.Player.Swing.performed += _ => EnterSwing();
         input.Player.Swing.canceled  += _ => ExitSwing();
 
-        // HandRig may spawn a frame or two later, so resolve it async.
-        waitHandRigCo = StartCoroutine(WaitForLocalHandRigAndBind());
+        // NEW: resolve NetworkHandRig by LogicalOwnerClientId
+        waitHandRigCo = StartCoroutine(WaitForMyHandRig());
 
         ApplyWalk();
-    }
-
-    private IEnumerator WaitForLocalHandRigAndBind()
-    {
-        // Try for a short while; increase if needed.
-        const float timeoutSeconds = 2.0f;
-        float t0 = Time.time;
-
-        while (IsOwner && Time.time - t0 < timeoutSeconds)
-        {
-            var rigId = HandRigIdentity.FindLocal();
-            if (rigId != null)
-            {
-                // 1) Grip follower lives on the HandRig root
-                if (!grip)
-                    grip = rigId.GetComponent<GripInertiaFollower>();
-
-                // Helpful debug
-                // Debug.Log($"[GolfStanceController] Bound HandRig: grip={(grip ? "OK" : "NULL")} swing={(swingPivotDriver ? "OK" : "NULL")}");
-
-                yield break;
-            }
-
-            yield return null; // wait a frame
-        }
-
-        Debug.LogWarning("[GolfStanceController] Timed out waiting for local HandRig. " +
-                         "Make sure HandRigSpawner is spawning it and HandRigIdentity tag/ownership is correct.");
     }
 
     public override void OnNetworkDespawn()
@@ -96,8 +62,47 @@ public class GolfStanceController : NetworkBehaviour
 
         if (waitHandRigCo != null)
             StopCoroutine(waitHandRigCo);
+    }
 
-        base.OnNetworkDespawn();
+    private IEnumerator WaitForMyHandRig()
+    {
+        const float timeoutSeconds = 3f;
+        float t0 = Time.time;
+
+        var nm = NetworkManager.Singleton;
+        ulong localClientId = nm.LocalClientId;
+
+        while (IsOwner && Time.time - t0 < timeoutSeconds)
+        {
+            foreach (var no in nm.SpawnManager.SpawnedObjectsList)
+            {
+                var handRig = no.GetComponent<NetworkHandRig>();
+                if (!handRig) continue;
+
+                if (handRig.LogicalOwnerClientId.Value != localClientId)
+                    continue;
+
+                grip = handRig.GetComponent<GripInertiaFollower>();
+
+                if (!grip)
+                {
+                    Debug.LogError(
+                        "[GolfStanceController] NetworkHandRig found, but GripInertiaFollower missing."
+                    );
+                    yield break;
+                }
+
+                Debug.Log("[GolfStanceController] Bound local NetworkHandRig.");
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        Debug.LogWarning(
+            "[GolfStanceController] Timed out waiting for local NetworkHandRig. " +
+            "Ensure GolfGameManager spawns it and sets LogicalOwnerClientId."
+        );
     }
 
     private void Update()
@@ -115,12 +120,12 @@ public class GolfStanceController : NetworkBehaviour
     {
         stance = Stance.Swing;
 
-        // If hand rig hasn’t bound yet, avoid null spam
-        if (grip) grip.SetFollowBodyAnchor();
+        if (grip)
+            grip.SetFollowBodyAnchor();
 
         movement?.HoldYawFor(walkToSwingBlend);
 
-        if (movement != null)
+        if (movement)
         {
             movement.SetMovementEnabled(false);
             movement.SetYawEnabled(false);
@@ -128,9 +133,9 @@ public class GolfStanceController : NetworkBehaviour
 
         swingPivotDriver?.BeginSwing();
 
-        if (rig != null)
+        if (rig)
         {
-            Transform follow = swingFollow != null ? swingFollow : fpsFollow;
+            Transform follow = swingFollow ? swingFollow : fpsFollow;
             rig.BindSwing(follow, hitPoint);
             rig.SetModeSwing(true);
         }
@@ -142,22 +147,22 @@ public class GolfStanceController : NetworkBehaviour
 
         swingPivotDriver?.EndSwing();
 
-        if (grip) grip.SetFollowCamera();
+        if (grip)
+            grip.SetFollowCamera();
 
         ApplyWalk();
-
         movement?.HoldYawFor(swingToWalkBlend);
     }
 
     private void ApplyWalk()
     {
-        if (movement != null)
+        if (movement)
         {
             movement.SetMovementEnabled(true);
             movement.SetYawEnabled(true);
         }
 
-        if (rig != null)
+        if (rig)
         {
             rig.BindWalk(fpsFollow, walkLookPoint);
             rig.SetModeSwing(false);

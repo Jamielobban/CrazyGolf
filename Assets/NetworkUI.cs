@@ -6,18 +6,18 @@ public class NetworkUI : MonoBehaviour
     public void StartHost()
     {
         NetworkManager.Singleton.StartHost();
-        Debug.Log("Started HOST");
+        //Debug.Log("Started HOST");
     }
 
     public void StartClient()
     {
         NetworkManager.Singleton.StartClient();
-        Debug.Log("Started CLIENT");
+        //Debug.Log("Started CLIENT");
     }
 
     public void StartServer()
     {
         NetworkManager.Singleton.StartServer();
-        Debug.Log("Started SERVER");
+        //Debug.Log("Started SERVER");
     }
 }

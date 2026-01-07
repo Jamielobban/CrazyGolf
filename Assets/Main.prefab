@@ -173,9 +173,8 @@ GameObject:
   - component: {fileID: 2765047706870737222}
   - component: {fileID: 156107744368656327}
   - component: {fileID: 4390947122104417625}
-  - component: {fileID: 4808253174511490519}
   - component: {fileID: 4182380670424442734}
-  - component: {fileID: 2936644357762711245}
+  - component: {fileID: 5294826543001115773}
   m_Layer: 9
   m_Name: Main
   m_TagString: Untagged
@@ -369,8 +368,8 @@ MonoBehaviour:
   SyncScaleX: 0
   SyncScaleY: 0
   SyncScaleZ: 0
-  PositionThreshold: 0.001
-  RotAngleThreshold: 0.01
+  PositionThreshold: 0.01
+  RotAngleThreshold: 0.1
   ScaleThreshold: 0.01
   UseQuaternionSynchronization: 0
   UseQuaternionCompression: 0
@@ -393,7 +392,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkRigidbody
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkRigidbodyBaseExpanded: 0
-  UseRigidBodyForMotion: 0
+  UseRigidBodyForMotion: 1
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
 --- !u!114 &5703685012536466997
@@ -417,6 +416,8 @@ MonoBehaviour:
   mineOnly: 1
   minImpulse: 0.1
   maxImpulse: 128
+  EquippedClubId:
+    m_InternalValue: -1
 --- !u!114 &2765047706870737222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -474,22 +475,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29637ed2935b8bc408fe6cfe13d7e564, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SwingPivotMouseRotate
+  ShowTopMostFoldoutHeaderGroup: 1
   swingPivot: {fileID: 5359839411412287128}
   currentData: {fileID: 0}
   isSwinging: 0
---- !u!114 &4808253174511490519
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2617925885463999829}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdc3405affc441d40aa321b1e2900d4c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ClubEquipOnStart
-  clubPrefab: {fileID: 4200646916718582470, guid: 95ae20b0fdc933c43b02ca0bb31fd25a, type: 3}
 --- !u!114 &4182380670424442734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -502,10 +491,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c38aedb95d8d784498940b9122f8fd2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolferContextLink
-  golfer: {fileID: 5703685012536466997}
+  swing: {fileID: 4390947122104417625}
   face: {fileID: 0}
+  golfer: {fileID: 5703685012536466997}
   equippedClub: {fileID: 0}
---- !u!114 &2936644357762711245
+  equippedData: {fileID: 0}
+--- !u!114 &5294826543001115773
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -514,12 +505,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 2617925885463999829}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ee42141852238b04293c0a1a80c346ab, type: 3}
+  m_Script: {fileID: 11500000, guid: acd61ac0b98e4af498592449e5228b52, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HandRigSpawner
+  m_EditorClassIdentifier: Assembly-CSharp::ClubVisualBinder
   ShowTopMostFoldoutHeaderGroup: 1
-  handRigPrefab: {fileID: 1617282092700432843, guid: 01d5e202c9f3a574c912bf96ed3645f1, type: 3}
-  bodyAnchorTag: BodyAnchorPivot
+  clubs:
+  - id: 0
+    visualPrefab: {fileID: 4200646916718582470, guid: 95ae20b0fdc933c43b02ca0bb31fd25a, type: 3}
+  link: {fileID: 0}
 --- !u!1 &4339547246322372314
 GameObject:
   m_ObjectHideFlags: 0

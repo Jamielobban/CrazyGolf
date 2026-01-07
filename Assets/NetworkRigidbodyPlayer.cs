@@ -55,6 +55,9 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     // Blend yaw hold
     private float yawHoldUntilTime;
 
+    public NetworkVariable<Quaternion> NetAimRotation =
+        new(Quaternion.identity, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -135,8 +138,19 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
         // Cinemachine applies camera motion in LateUpdate, so sample yaw here
         var view = ViewTransform;
-        if (view != null)
+       if (view != null)
+        {
             cachedYawFromView = view.eulerAngles.y;
+
+            Vector3 e = view.eulerAngles;
+            float pitch = e.x;
+            if (pitch > 180f) pitch -= 360f;
+            pitch = Mathf.Clamp(pitch, -75f, 75f); // match your pitchClamp if you want
+
+            float yaw = e.y;
+
+            NetAimRotation.Value = Quaternion.Euler(pitch, yaw, 0f);
+        }
     }
 
     private void Update()

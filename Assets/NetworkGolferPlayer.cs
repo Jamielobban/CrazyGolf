@@ -32,6 +32,9 @@ public class NetworkGolferPlayer : NetworkBehaviour
     private PlayerInputActions input;
     private bool hitPressed;
 
+    public NetworkVariable<int> EquippedClubId =
+        new(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     public override void OnNetworkSpawn()
     {
         myBallNetworkId.OnValueChanged += OnMyBallIdChanged;

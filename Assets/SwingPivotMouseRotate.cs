@@ -1,6 +1,7 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class SwingPivotMouseRotate : MonoBehaviour
+public class SwingPivotMouseRotate : NetworkBehaviour
 {
     [Header("Assign")]
     [SerializeField] private Transform swingPivot;
@@ -112,6 +113,7 @@ public class SwingPivotMouseRotate : MonoBehaviour
 
     void Update()
     {
+         if (!IsOwner) return;
         if (!isSwinging || !swingPivot) return;
         if (!currentData) return;
 
