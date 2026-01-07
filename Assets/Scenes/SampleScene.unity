@@ -3244,6 +3244,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolfGameManager
   golfBallPrefab: {fileID: 6745977682126742882, guid: a29643c35502ce14b85ca8d960af3065, type: 3}
+  handRigPrefab: {fileID: 975723930845287343, guid: 01d5e202c9f3a574c912bf96ed3645f1, type: 3}
   teeSpawns: []
 --- !u!1 &1863501513
 GameObject:

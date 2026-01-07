@@ -1,13 +1,12 @@
-using Unity.Netcode;
 using UnityEngine;
+using Unity.Netcode;
 
-public class GripInertiaFollower : NetworkBehaviour
+public class GripInertiaFollower : MonoBehaviour
 {
     public enum GripRotationMode { FollowCamera, FollowBodyAnchor }
 
-    [Header("Find by tag")]
+    [Header("Find by tag (under player)")]
     [SerializeField] private string bodyAnchorTag = "BodyAnchorPivot";
-
 
     [Header("Mode")]
     [SerializeField] private GripRotationMode rotationMode = GripRotationMode.FollowCamera;
@@ -22,67 +21,110 @@ public class GripInertiaFollower : NetworkBehaviour
     [SerializeField] private float pitchClamp = 75f;
 
     [SerializeField] private Transform bodyAnchor;
+
+    private ulong followClientId = ulong.MaxValue;
     private Vector3 vel;
 
-    public override void OnNetworkSpawn()
-    {
-        // Only owner drives the motion; NetworkTransform replicates it.
-        if (!IsOwner)
-        {
-            enabled = false;
-            return;
-        }
+    private NetworkObject cachedPlayerNO;
 
-        ResolveBodyAnchor();
-        SnapNow();
+    private bool canUseLocalCamera;
+
+    private NetworkRigidbodyPlayer ownerPlayer;
+
+    /// <summary>
+    /// Called exactly once by NetworkHandRig when the logical owner is known.
+    /// </summary>
+    public void BindToPlayer(ulong clientId)
+    {
+        followClientId = clientId;
+        bodyAnchor = null;
+        cachedPlayerNO = null; // if you added caching
+        ownerPlayer = null;
+
+        var nm = NetworkManager.Singleton;
+        canUseLocalCamera = nm != null && nm.IsConnectedClient && nm.LocalClientId == followClientId;
+
+        TryResolveOwnerPlayer();
+        TryResolveBodyAnchor();
+
+        if (bodyAnchor)
+            SnapNow();
+
+        Debug.Log(
+            $"[GripFollower] Bound to client {followClientId}, " +
+            $"anchor={(bodyAnchor ? bodyAnchor.name : "NULL")}"
+        );
+        Debug.Log($"[GripFollower] Bound followClientId={followClientId} local={nm?.LocalClientId} canUseLocalCamera={canUseLocalCamera}");
     }
 
-    void ResolveBodyAnchor()
+   private void TryResolveOwnerPlayer()
     {
-        bodyAnchor = null;
+        if (ownerPlayer != null) return;
 
-        if (!NetworkManager.Singleton)
-            return;
+        var nm = NetworkManager.Singleton;
+        if (!nm) return;
 
-        // HandRig is owned by a player. Find THAT player's NetworkObject.
-        if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(OwnerClientId, out var client) ||
-            client == null || client.PlayerObject == null)
+        foreach (var no in nm.SpawnManager.SpawnedObjectsList)
         {
-            // Player object might not exist yet on this frame (spawn order)
+            if (!no || !no.IsPlayerObject) continue;
+            if (no.OwnerClientId != followClientId) continue;
+
+            ownerPlayer = no.GetComponent<NetworkRigidbodyPlayer>();
             return;
         }
+    }
 
-        var playerRoot = client.PlayerObject.transform;
+    private void TryResolveBodyAnchor()
+    {
+        if (bodyAnchor) return;
+        if (followClientId == ulong.MaxValue) return;
 
-        // Find the anchor under THAT player's hierarchy by tag
-        var all = playerRoot.GetComponentsInChildren<Transform>(true);
-        for (int i = 0; i < all.Length; i++)
+        var nm = NetworkManager.Singleton;
+        if (!nm) return;
+
+        if (!cachedPlayerNO)
         {
-            if (all[i].CompareTag(bodyAnchorTag))
+            foreach (var no in nm.SpawnManager.SpawnedObjectsList)
             {
-                bodyAnchor = all[i];
-                break;
+                if (no && no.IsPlayerObject && no.OwnerClientId == followClientId)
+                {
+                    cachedPlayerNO = no;
+                    break;
+                }
             }
         }
 
-        if (!bodyAnchor)
-            Debug.LogError($"[GripInertiaFollower] No '{bodyAnchorTag}' found under owner player {OwnerClientId}.");
+        if (!cachedPlayerNO) return;
+
+        foreach (var t in cachedPlayerNO.GetComponentsInChildren<Transform>(true))
+        {
+            if (t.CompareTag(bodyAnchorTag))
+            {
+                bodyAnchor = t;
+                return;
+            }
+        }
     }
 
-    void FixedUpdate()
+
+
+    private void FixedUpdate()
     {
-        if (!IsOwner) return;
         if (!bodyAnchor)
         {
-            // try again if it spawned later
-            ResolveBodyAnchor();
+            TryResolveBodyAnchor();
             if (!bodyAnchor) return;
+        }
+
+       if (ownerPlayer == null)
+        {
+            TryResolveOwnerPlayer();
         }
 
         float dt = Time.deltaTime;
         if (dt <= 0f) return;
 
-        // ---- POSITION (world) ----
+        // ---- POSITION ----
         Vector3 targetPos = bodyAnchor.position;
 
         Vector3 x = transform.position;
@@ -92,30 +134,44 @@ public class GripInertiaFollower : NetworkBehaviour
         v += a * dt;
 
         float spd = v.magnitude;
-        if (spd > maxSpeed) v *= (maxSpeed / spd);
+        if (spd > maxSpeed)
+            v *= (maxSpeed / spd);
 
         x += v * dt;
 
         transform.position = x;
         vel = v;
 
-        // ---- ROTATION (world) ----
+        // ---- ROTATION ----
         Quaternion targetRot;
 
         if (rotationMode == GripRotationMode.FollowCamera)
         {
-            var cam = Camera.main;
-            if (!cam) return;
+            if (canUseLocalCamera)
+            {
+                var cam = Camera.main;
+                if (!cam) return;
 
-            Vector3 e = cam.transform.eulerAngles;
+                Vector3 e = cam.transform.eulerAngles;
 
-            float pitch = e.x;
-            if (pitch > 180f) pitch -= 360f;
-            pitch = Mathf.Clamp(pitch, -pitchClamp, pitchClamp);
+                float pitch = e.x;
+                if (pitch > 180f) pitch -= 360f;
+                pitch = Mathf.Clamp(pitch, -pitchClamp, pitchClamp);
 
-            float yaw = e.y;
+                float yaw = e.y;
 
-            targetRot = Quaternion.Euler(pitch, yaw, 0f);
+                targetRot = Quaternion.Euler(pitch, yaw, 0f);
+            }
+            else
+            {
+                if (ownerPlayer == null)
+                    TryResolveOwnerPlayer();
+
+                if (ownerPlayer != null)
+                    targetRot = ownerPlayer.NetAimRotation.Value;
+                else
+                    targetRot = bodyAnchor.rotation; // safe fallback
+            }
         }
         else
         {
@@ -133,19 +189,32 @@ public class GripInertiaFollower : NetworkBehaviour
         transform.position = bodyAnchor.position;
         vel = Vector3.zero;
 
-        if (rotationMode == GripRotationMode.FollowCamera)
+       if (rotationMode == GripRotationMode.FollowCamera)
         {
-            var cam = Camera.main;
-            if (!cam) return;
+            Quaternion targetRot;
 
-            Vector3 e = cam.transform.eulerAngles;
+            if (canUseLocalCamera)
+            {
+                var cam = Camera.main;
+                if (!cam) return;
 
-            float pitch = e.x;
-            if (pitch > 180f) pitch -= 360f;
-            pitch = Mathf.Clamp(pitch, -pitchClamp, pitchClamp);
+                Vector3 e = cam.transform.eulerAngles;
 
-            float yaw = e.y;
-            transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+                float pitch = e.x;
+                if (pitch > 180f) pitch -= 360f;
+                pitch = Mathf.Clamp(pitch, -pitchClamp, pitchClamp);
+
+                float yaw = e.y;
+
+                targetRot = Quaternion.Euler(pitch, yaw, 0f);
+            }
+            else
+            {
+                if (ownerPlayer == null) TryResolveOwnerPlayer();
+                targetRot = (ownerPlayer != null) ? ownerPlayer.NetAimRotation.Value : bodyAnchor.rotation;
+            }
+
+            transform.rotation = targetRot;
         }
         else
         {
@@ -153,6 +222,15 @@ public class GripInertiaFollower : NetworkBehaviour
         }
     }
 
-    public void SetFollowCamera() { rotationMode = GripRotationMode.FollowCamera; SnapNow(); }
-    public void SetFollowBodyAnchor() { rotationMode = GripRotationMode.FollowBodyAnchor; SnapNow(); }
+    public void SetFollowCamera()
+    {
+        rotationMode = GripRotationMode.FollowCamera;
+        SnapNow();
+    }
+
+    public void SetFollowBodyAnchor()
+    {
+        rotationMode = GripRotationMode.FollowBodyAnchor;
+        SnapNow();
+    }
 }

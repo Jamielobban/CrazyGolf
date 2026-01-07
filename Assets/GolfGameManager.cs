@@ -6,11 +6,13 @@ using UnityEngine;
 public class GolfGameManager : MonoBehaviour
 {
     [SerializeField] private NetworkObject golfBallPrefab;
+    [SerializeField] private NetworkObject handRigPrefab;
 
     [Header("Spawn Points (optional)")]
     [SerializeField] private Transform[] teeSpawns;
 
     private readonly Dictionary<ulong, NetworkObject> ballByClient = new();
+    private readonly Dictionary<ulong, NetworkObject> rigByClient  = new();
 
     private void OnEnable()
     {
@@ -32,7 +34,20 @@ public class GolfGameManager : MonoBehaviour
         if (nm.IsServer)
         {
             foreach (var kv in nm.ConnectedClients)
-                EnsureBallForClient(kv.Key);
+            {
+                ulong clientId = kv.Key;
+
+                EnsureBallForClient(clientId);
+                EnsureRigForClient(clientId);
+
+                // equip default for already-connected clients too
+                var client = kv.Value;
+                if (client.PlayerObject)
+                {
+                    var player = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
+                    if (player) player.EquippedClubId.Value = 0;
+                }
+            }
         }
     }
 
@@ -51,6 +66,14 @@ public class GolfGameManager : MonoBehaviour
         if (nm == null || !nm.IsServer) return;
 
         EnsureBallForClient(clientId);
+        EnsureRigForClient(clientId);
+
+        if (nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject)
+        {
+            var player = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
+            if (player)
+                player.EquippedClubId.Value = 0;
+        }
     }
 
     private void OnClientDisconnected(ulong clientId)
@@ -64,6 +87,14 @@ public class GolfGameManager : MonoBehaviour
                 ballNO.Despawn(true);
 
             ballByClient.Remove(clientId);
+        }
+
+        if (rigByClient.TryGetValue(clientId, out var rigNO) && rigNO != null)
+        {
+            if (rigNO.IsSpawned)
+                rigNO.Despawn(true);
+
+            rigByClient.Remove(clientId);
         }
 
         // clear player's reference
@@ -104,7 +135,36 @@ public class GolfGameManager : MonoBehaviour
 
         AssignBallIdToPlayer(clientId, ballNO.NetworkObjectId);
 
-        Debug.Log($"[GolfGameManager] Spawned ball for client {clientId} at {pos}");
+        //Debug.Log($"[GolfGameManager] Spawned ball for client {clientId} at {pos}");
+    }
+
+     private void EnsureRigForClient(ulong clientId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || !nm.IsServer) return;
+
+        if (handRigPrefab == null)
+        {
+            Debug.LogError("[GolfGameManager] handRigPrefab not set.");
+            return;
+        }
+
+        if (rigByClient.TryGetValue(clientId, out var existing) && existing != null && existing.IsSpawned)
+            return;
+
+        var rigNO = Instantiate(handRigPrefab);
+        rigNO.Spawn();
+
+        var rig = rigNO.GetComponent<NetworkHandRig>();
+        if (rig == null)
+        {
+            Debug.LogError("[GolfGameManager] handRigPrefab is missing NetworkHandRig component.");
+            rigNO.Despawn(true);
+            return;
+        }
+
+        rig.LogicalOwnerClientId.Value = clientId;
+        rigByClient[clientId] = rigNO;
     }
 
     private Vector3 GetSpawnPosForClient(ulong clientId)

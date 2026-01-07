@@ -27,7 +27,7 @@ public class GolferContextLink : MonoBehaviour
         equippedData = club ? club.data : null;
 
         // Debug so you KNOW it’s being set
-        Debug.Log($"[GolferContextLink] EquippedClub={(equippedClub ? equippedClub.name : "NULL")} Data={(equippedData ? equippedData.clubName : "NULL")}");
+        //Debug.Log($"[GolferContextLink] EquippedClub={(equippedClub ? equippedClub.name : "NULL")} Data={(equippedData ? equippedData.clubName : "NULL")}");
     }
 
     public void SetEquippedData(ClubData data)
@@ -35,7 +35,7 @@ public class GolferContextLink : MonoBehaviour
         equippedClub = null;
         equippedData = data;
 
-        Debug.Log($"[GolferContextLink] EquippedData={(equippedData ? equippedData.clubName : "NULL")}");
+        //Debug.Log($"[GolferContextLink] EquippedData={(equippedData ? equippedData.clubName : "NULL")}");
     }
 
     
