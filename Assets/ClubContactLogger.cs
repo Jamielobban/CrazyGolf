@@ -76,7 +76,6 @@ public class ClubBallContactLogger : MonoBehaviour
 
         Vector3 v = vel.VelocityWorld;
 
-        // PATH from velocity (XZ)
         Vector3 vFlat = new Vector3(v.x, 0f, v.z);
         float flatSpeed = vFlat.magnitude;
         if (flatSpeed < 0.001f) return;
@@ -84,11 +83,9 @@ public class ClubBallContactLogger : MonoBehaviour
         Vector3 pathDir = vFlat / flatSpeed;
         float pathYaw = Mathf.Atan2(pathDir.x, pathDir.z) * Mathf.Rad2Deg;
 
-        // Attack angle from velocity
         float attackDeg = Mathf.Atan2(v.y, flatSpeed) * Mathf.Rad2Deg;
 
-        // FACE from real face normal (local -X), flattened on XZ
-        Vector3 faceN = faceFrame.TransformDirection(Vector3.left); // -X
+        Vector3 faceN = faceFrame.TransformDirection(Vector3.left); 
         Vector3 faceFlat = new Vector3(faceN.x, 0f, faceN.z);
         float faceFlatMag = faceFlat.magnitude;
         Vector3 faceDir = (faceFlatMag > 0.001f) ? (faceFlat / faceFlatMag) : pathDir;
@@ -98,17 +95,13 @@ public class ClubBallContactLogger : MonoBehaviour
 
         float curve01 = Mathf.Clamp(faceMinusPath / fpForFullCurve, -1f, 1f);
 
-        // Club data
         float loftDeg = data ? data.loftDeg : 0f;
 
-        // Power (curve)
         float norm = Mathf.Clamp01(speed / Mathf.Max(0.001f, speedForFullPower));
         float power01 = Mathf.Clamp01(powerCurve.Evaluate(norm));
 
-        // Launch angle
         float launchDeg = Mathf.Clamp(loftDeg + attackDeg, minLaunchDeg, maxLaunchDeg);
 
-        // ---- BUILD A 3D LAUNCH DIRECTION THAT ALWAYS GOES UP ----
         Vector3 rightAxis = Vector3.Cross(pathDir, Vector3.up);
         if (rightAxis.sqrMagnitude < 0.0001f) rightAxis = transform.right;
         rightAxis.Normalize();
@@ -122,7 +115,6 @@ public class ClubBallContactLogger : MonoBehaviour
 
         launchDir.Normalize();
 
-        // Debug-only curvature preview
         float curveDeg = Mathf.Clamp(faceMinusPath * curvePerDeg, -maxCurveDeg, maxCurveDeg);
 
         float faceRoll = face ? face.CurrentFaceRoll : 0f;
@@ -146,7 +138,6 @@ public class ClubBallContactLogger : MonoBehaviour
             $"launchDir={launchDir} ball={other.name}"
         );
 
-        // 1) get the ball's NetworkObjectId
         var ballNO = other.GetComponentInParent<Unity.Netcode.NetworkObject>();
         if (!ballNO)
         {

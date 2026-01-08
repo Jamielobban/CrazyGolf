@@ -13,7 +13,6 @@ public class EquippedClubFollowGrip : MonoBehaviour
     {
         if (!gripPivot) return;
 
-        // Hard follow (you can add smoothing later)
         transform.position = gripPivot.position;
         transform.rotation = gripPivot.rotation;
     }

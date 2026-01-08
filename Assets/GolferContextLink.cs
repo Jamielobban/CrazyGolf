@@ -26,7 +26,6 @@ public class GolferContextLink : MonoBehaviour
         equippedClub = club;
         equippedData = club ? club.data : null;
 
-        // Debug so you KNOW it’s being set
         //Debug.Log($"[GolferContextLink] EquippedClub={(equippedClub ? equippedClub.name : "NULL")} Data={(equippedData ? equippedData.clubName : "NULL")}");
     }
 

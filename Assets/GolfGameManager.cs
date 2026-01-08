@@ -21,7 +21,6 @@ public class GolfGameManager : MonoBehaviour
 
     private IEnumerator HookWhenReady()
     {
-        // Wait until NetworkManager exists
         while (NetworkManager.Singleton == null)
             yield return null;
 
@@ -30,7 +29,6 @@ public class GolfGameManager : MonoBehaviour
         nm.OnClientConnectedCallback += OnClientConnected;
         nm.OnClientDisconnectCallback += OnClientDisconnected;
 
-        // If host/server already started, spawn for already-connected clients
         if (nm.IsServer)
         {
             foreach (var kv in nm.ConnectedClients)
@@ -40,7 +38,6 @@ public class GolfGameManager : MonoBehaviour
                 EnsureBallForClient(clientId);
                 EnsureRigForClient(clientId);
 
-                // equip default for already-connected clients too
                 var client = kv.Value;
                 if (client.PlayerObject)
                 {
@@ -97,7 +94,6 @@ public class GolfGameManager : MonoBehaviour
             rigByClient.Remove(clientId);
         }
 
-        // clear player's reference
         if (nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
         {
             var player = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
@@ -169,15 +165,12 @@ public class GolfGameManager : MonoBehaviour
 
     private Vector3 GetSpawnPosForClient(ulong clientId)
     {
-        // 1) teeSpawns if provided
         if (teeSpawns != null && teeSpawns.Length > 0)
         {
             int idx = (int)(clientId % (ulong)teeSpawns.Length);
             if (teeSpawns[idx] != null)
                 return teeSpawns[idx].position;
         }
-
-        // 2) fallback: near player
         var nm = NetworkManager.Singleton;
         if (nm != null && nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
         {
@@ -185,7 +178,6 @@ public class GolfGameManager : MonoBehaviour
             return t.position + t.forward * 5f;
         }
 
-        // 3) last resort: origin
         return Vector3.zero;
     }
 

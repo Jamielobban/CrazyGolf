@@ -1,9 +1,3 @@
-// NetworkGolferPlayer.cs
-// Owner requests hits, server validates and applies.
-// IMPORTANT CHANGE:
-// - Client does NOT send impulse.
-// - Client sends power01 (0..1). Server maps it to impulse using authoritative min/max.
-
 using Unity.Netcode;
 using UnityEngine;
 
@@ -28,7 +22,6 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
     public NetworkGolfBall MyBall { get; private set; }
 
-    // Optional input fallback (button-hit), you can remove if you want
     private PlayerInputActions input;
     private bool hitPressed;
 
@@ -44,7 +37,6 @@ public class NetworkGolferPlayer : NetworkBehaviour
             input = new PlayerInputActions();
             input.Enable();
 
-            // Optional fallback: press hit to do a simple forward hit at full power
             input.Player.Hit.performed += _ => hitPressed = true;
         }
 
@@ -66,7 +58,6 @@ public class NetworkGolferPlayer : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        // OPTIONAL fallback while you're prototyping
         if (hitPressed)
         {
             hitPressed = false;
@@ -75,12 +66,10 @@ public class NetworkGolferPlayer : NetworkBehaviour
             aim.y = 0f;
             if (aim.sqrMagnitude < 0.0001f) return;
 
-            // Full power
             //RequestHitClosestBallServerRpc(aim.normalized, 1f);
         }
     }
 
-    // Called by server (manager) to set this player's ball id
     public void SetMyBallIdServer(ulong ballId)
     {
         if (!IsServer) return;
@@ -122,7 +111,7 @@ public class NetworkGolferPlayer : NetworkBehaviour
         var ball = no.GetComponent<NetworkGolfBall>();
         if (ball == null) return;
 
-        // Validate ownership / stopped / distance
+
         if (mineOnly && ball.LogicalOwnerClientId != senderId) return;
         if (!ball.IsStoppedServer()) return;
 
@@ -135,10 +124,8 @@ public class NetworkGolferPlayer : NetworkBehaviour
         if (dir.sqrMagnitude < 0.0001f) return;
         dir.Normalize();
 
-        // Authoritative impulse mapping
         float impulse = Mathf.Lerp(minImpulse, maxImpulse, power01);
 
-        // Debug (optional)
         //Debug.Log($"[HIT][Server] sender={senderId} ball={ballNetId} power01={power01:F2} impulse={impulse:F2} dir={dir}");
 
         ball.HitServer(dir, impulse,curve01);

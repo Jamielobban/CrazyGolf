@@ -25,7 +25,6 @@ public class ClubEquipOnStart : MonoBehaviour
 
         NetworkHandRig myRig = null;
 
-        // Wait until my rig is spawned + owner id has replicated
         while (myRig == null)
         {
             foreach (var no in nm.SpawnManager.SpawnedObjectsList)
@@ -43,7 +42,6 @@ public class ClubEquipOnStart : MonoBehaviour
             yield return null;
         }
 
-        // Get the follower on that rig
         var follower = myRig.GetComponent<GripInertiaFollower>();
         if (!follower)
         {
@@ -51,8 +49,7 @@ public class ClubEquipOnStart : MonoBehaviour
             yield break;
         }
 
-        // You need a pivot to parent to. Best is to expose it explicitly on the rig/follower.
-        // For now: use the follower's transform as the pivot (or replace with follower.GripPivot if you add it)
+
         Transform gripPivot = follower.transform;
 
         Equip(gripPivot);
@@ -71,7 +68,6 @@ public class ClubEquipOnStart : MonoBehaviour
         var gc = club.GetComponent<GolfClub>();
         if (gc && link) link.SetEquippedClub(gc);
 
-        // Parent first, keep world pose for now
         club.transform.SetParent(gripPivot, true);
 
         Transform gripPoint = club.transform.Find("GripPoint");
@@ -83,11 +79,9 @@ public class ClubEquipOnStart : MonoBehaviour
             return;
         }
 
-        // Rotate club so GripPoint matches GripPivot
         Quaternion rotDelta = gripPivot.rotation * Quaternion.Inverse(gripPoint.rotation);
         club.transform.rotation = rotDelta * club.transform.rotation;
 
-        // Move club so GripPoint sits on GripPivot
         Vector3 posDelta = gripPivot.position - gripPoint.position;
         club.transform.position += posDelta;
     }

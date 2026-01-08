@@ -37,7 +37,6 @@ public class ClubInteractor : MonoBehaviour
 
         if (lookedAt != null)
         {
-            // replace with UI later
             Debug.Log($"[LOOK] {lookedAt.name} (press E)");
 
             if (Input.GetKeyDown(KeyCode.E))

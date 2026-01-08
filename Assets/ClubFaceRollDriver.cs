@@ -4,7 +4,7 @@ public class ClubFaceRollDriver : MonoBehaviour
 {
     [Header("Refs")]
     [SerializeField] private SwingPivotMouseRotate swing;
-    [SerializeField] private Transform handSlot; // where equipped club gets parented
+    [SerializeField] private Transform handSlot; 
 
     [Header("Face Roll (degrees)")]
     [SerializeField] private float rollFromYawVel = 0.015f; // 0.008–0.03
@@ -16,8 +16,7 @@ public class ClubFaceRollDriver : MonoBehaviour
     [SerializeField] private AnimationCurve rollGainByPitch =
         AnimationCurve.EaseInOut(-80f, 0.6f, 80f, 1.6f);
 
-    private Transform facePivot; // visualRoot of equipped club
-
+    private Transform facePivot; 
     private float faceRoll;
     private float faceRollVel;
     private float prevYaw;
@@ -36,7 +35,6 @@ public class ClubFaceRollDriver : MonoBehaviour
     {
         if (!swing || !swing.isSwinging) return;
 
-        // If club swapped, rebind automatically
         if (!facePivot) TryBindFromHandSlot();
         if (!facePivot) return;
 
@@ -51,23 +49,19 @@ public class ClubFaceRollDriver : MonoBehaviour
 
         float gain = rollGainByPitch.Evaluate(pitch);
 
-        // Drive: fast yaw changes twist the face (open/close)
         float drive = yawVel * rollFromYawVel * gain;
 
-        // Spring back to square (0) with damping
         float accel = (-squareSpring * faceRoll) - (squareDamping * faceRollVel) + drive;
         faceRollVel += accel * dt;
         faceRoll += faceRollVel * dt;
 
         faceRoll = Mathf.Clamp(faceRoll, -maxRoll, maxRoll);
 
-        // Shaft axis is +Z -> roll around local Z
         facePivot.localRotation = Quaternion.Euler(0f, 0f, faceRoll);
     }
 
     public void OnEquippedClubChanged()
     {
-        // Call this when you pick up / drop / swap club (best practice)
         facePivot = null;
         ResetFace();
         TryBindFromHandSlot();

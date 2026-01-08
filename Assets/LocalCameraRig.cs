@@ -1,11 +1,3 @@
-// LocalCameraRig.cs
-// LOCAL-ONLY prefab (NOT a NetworkObject).
-// Uses PRIORITY switching (NO SetActive), so PanTilt won't reset/recenter on enable.
-// Prefab contains:
-// - MainCamera (Camera + AudioListener + CinemachineBrain)
-// - WalkCam (CinemachineCamera) with PanTilt + InputAxisController (optional)
-// - SwingCam (CinemachineCamera) with RotationComposer etc.
-
 using UnityEngine;
 using Unity.Cinemachine;
 
@@ -34,17 +26,14 @@ public class LocalCameraRig : MonoBehaviour
 
     private void OnEnable()
     {
-        // Default to walk on spawn so there is never ambiguity.
         SetModeSwing(false);
     }
 
     public void SetModeSwing(bool swing)
     {
-        // Keep BOTH cams enabled; only priorities decide which is live.
         if (walkCam != null) walkCam.Priority = swing ? 0 : walkPriority;
         if (swingCam != null) swingCam.Priority = swing ? swingPriority : 0;
 
-        // Common pattern: only allow free-look input while walking
         if (inputAxis != null) inputAxis.enabled = !swing;
     }
 

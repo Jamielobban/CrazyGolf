@@ -4,7 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkObject))]
 public class ClubPickup : NetworkBehaviour
 {
-    [SerializeField] private GolfClub golfClub; // on same prefab root
+    [SerializeField] private GolfClub golfClub; 
     public GolfClub GolfClub => golfClub;
 
     void Awake()

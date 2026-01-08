@@ -8,7 +8,7 @@ public class ClubVisualBinder : NetworkBehaviour
     public struct ClubEntry
     {
         public int id;
-        public GameObject visualPrefab; // NON-networked visual prefab
+        public GameObject visualPrefab; 
     }
 
     [SerializeField] private ClubEntry[] clubs;
@@ -31,7 +31,6 @@ public class ClubVisualBinder : NetworkBehaviour
 
         player.EquippedClubId.OnValueChanged += OnClubChanged;
 
-        // apply initial state (important for late join / already-set values)
         OnClubChanged(-999, player.EquippedClubId.Value);
     }
 
@@ -49,7 +48,6 @@ public class ClubVisualBinder : NetworkBehaviour
         if (currentId == newId) return;
         currentId = newId;
 
-        // clear previous visual + data ref
         if (currentClub)
         {
             Destroy(currentClub);
@@ -88,7 +86,6 @@ public class ClubVisualBinder : NetworkBehaviour
 
     private IEnumerator AttachWhenRigReady()
     {
-        // Wait until the hand rig for THIS player exists (on this client)
         Transform gripPivot = null;
 
         while (gripPivot == null)
@@ -99,7 +96,6 @@ public class ClubVisualBinder : NetworkBehaviour
 
         AttachToPivot(currentClub.transform, gripPivot);
 
-        // set data
         var gc = currentClub.GetComponent<GolfClub>();
         if (gc && link) link.SetEquippedClub(gc);
     }
@@ -118,7 +114,7 @@ public class ClubVisualBinder : NetworkBehaviour
                 continue;
 
             var follower = rig.GetComponent<GripInertiaFollower>();
-            return follower ? follower.transform : null; // replace with explicit pivot later
+            return follower ? follower.transform : null; 
         }
 
         return null;

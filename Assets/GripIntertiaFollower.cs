@@ -31,14 +31,11 @@ public class GripInertiaFollower : MonoBehaviour
 
     private NetworkRigidbodyPlayer ownerPlayer;
 
-    /// <summary>
-    /// Called exactly once by NetworkHandRig when the logical owner is known.
-    /// </summary>
     public void BindToPlayer(ulong clientId)
     {
         followClientId = clientId;
         bodyAnchor = null;
-        cachedPlayerNO = null; // if you added caching
+        cachedPlayerNO = null; 
         ownerPlayer = null;
 
         var nm = NetworkManager.Singleton;
@@ -170,7 +167,7 @@ public class GripInertiaFollower : MonoBehaviour
                 if (ownerPlayer != null)
                     targetRot = ownerPlayer.NetAimRotation.Value;
                 else
-                    targetRot = bodyAnchor.rotation; // safe fallback
+                    targetRot = bodyAnchor.rotation; 
             }
         }
         else

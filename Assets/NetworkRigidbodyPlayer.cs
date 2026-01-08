@@ -1,10 +1,3 @@
-// NetworkRigidbodyPlayer.cs
-// - Owner reads local input, sends move + yaw to server.
-// - Server applies rb.MoveRotation and velocity.
-//
-// Still includes the "HoldYawFor(blendTime)" fix so body doesn't chase blended yaw.
-// Priority switching means PanTilt shouldn't reset anymore.
-
 using Unity.Netcode;
 using UnityEngine;
 
@@ -33,26 +26,22 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
     private Rigidbody rb;
 
-    // Input (owner)
     private PlayerInputActions input;
     private Vector2 moveInputOwner;
 
-    // Networked input (server)
     private Vector2 moveInputServer;
     private float yawServer;
     private float yawServerSmooth;
 
-    // Gating (controlled by stance controller)
     private bool movementEnabled = true;
     private bool yawEnabled = true;
 
-    // Keep last yaw we sent so server stays stable while yaw is disabled or held
     private float lastYawSent;
 
-    // Camera yaw sampled in LateUpdate (Cinemachine updates late)
+
     private float cachedYawFromView;
 
-    // Blend yaw hold
+ 
     private float yawHoldUntilTime;
 
     public NetworkVariable<Quaternion> NetAimRotation =
@@ -116,17 +105,13 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
         localRig = Instantiate(cameraRigPrefab);
 
-        // Priority default: walk
         localRig.SetModeSwing(false);
     }
 
-    // Called by GolfStanceController
     public void SetMovementEnabled(bool enabled) => movementEnabled = enabled;
 
-    // Called by GolfStanceController
     public void SetYawEnabled(bool enabled) => yawEnabled = enabled;
 
-    // Called by GolfStanceController when switching cameras
     public void HoldYawFor(float seconds)
     {
         yawHoldUntilTime = Mathf.Max(yawHoldUntilTime, Time.time + seconds);
@@ -136,7 +121,7 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        // Cinemachine applies camera motion in LateUpdate, so sample yaw here
+
         var view = ViewTransform;
        if (view != null)
         {
@@ -145,7 +130,7 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
             Vector3 e = view.eulerAngles;
             float pitch = e.x;
             if (pitch > 180f) pitch -= 360f;
-            pitch = Mathf.Clamp(pitch, -75f, 75f); // match your pitchClamp if you want
+            pitch = Mathf.Clamp(pitch, -75f, 75f); 
 
             float yaw = e.y;
 
@@ -161,7 +146,6 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
         if (yawEnabled)
         {
-            // During blend window: DO NOT follow blended camera yaw
             if (Time.time < yawHoldUntilTime)
             {
                 yawToSend = lastYawSent;
@@ -193,7 +177,7 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        // Smooth yaw
+
         yawServerSmooth = Mathf.LerpAngle(
             yawServerSmooth,
             yawServer,
@@ -202,7 +186,7 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
         rb.MoveRotation(Quaternion.Euler(0f, yawServerSmooth, 0f));
 
-        // Movement
+  
         Vector3 inputDir = new Vector3(moveInputServer.x, 0f, moveInputServer.y);
         if (inputDir.sqrMagnitude > 1f) inputDir.Normalize();
 
