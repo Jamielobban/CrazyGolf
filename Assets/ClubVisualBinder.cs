@@ -20,7 +20,7 @@ public class ClubVisualBinder : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (!link) link = GetComponentInChildren<GolferContextLink>() ?? GetComponentInParent<GolferContextLink>();
+        if (!link) link = GetComponent<GolferContextLink>();
 
         player = GetComponent<NetworkGolferPlayer>();
         if (!player)
@@ -68,6 +68,14 @@ public class ClubVisualBinder : NetworkBehaviour
         }
 
         currentClub = Instantiate(prefab);
+        Debug.Log("Instantiated club on club visual binder chheck");
+
+        //Debug.Log($"[ClubVisualBinder] link={(link ? link.name : "NULL")} golfer={(link && link.golfer ? link.golfer.name : "NULL")} isOwner={(link && link.golfer ? link.golfer.IsOwner : false)}");
+        foreach (var logger in currentClub.GetComponentsInChildren<ClubBallContactLogger>(true))
+        {
+            //Debug.Log(logger.gameObject.name);
+            logger.BindContext(link);
+        }
         StartCoroutine(AttachWhenRigReady());
     }
 
