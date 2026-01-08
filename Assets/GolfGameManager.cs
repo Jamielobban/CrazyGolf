@@ -182,7 +182,7 @@ public class GolfGameManager : MonoBehaviour
         if (nm != null && nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
         {
             var t = client.PlayerObject.transform;
-            return t.position + t.forward * 2f;
+            return t.position + t.forward * 5f;
         }
 
         // 3) last resort: origin

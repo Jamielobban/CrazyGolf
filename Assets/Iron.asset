@@ -17,15 +17,15 @@ MonoBehaviour:
   pitchSpeed: 4
   pitchMin: -80
   pitchMax: 80
-  rotFollow: 30
+  rotFollow: 45
   invertY: 1
-  enableCatchup: 1
+  enableCatchup: 0
   catchupBoost: 3.5
-  catchupTime: 0.09
-  reversalThreshold: 40
-  enableAntiParking: 0
-  yawClamp: 60
-  yawDecay: 7
+  catchupTime: 0.25
+  reversalThreshold: 10
+  enableAntiParking: 1
+  yawClamp: 145
+  yawDecay: 1.5
   pitchDecay: 2
   yawGainByPitch:
     serializedVersion: 2
