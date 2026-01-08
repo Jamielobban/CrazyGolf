@@ -13,10 +13,77 @@ MonoBehaviour:
   m_Name: Iron
   m_EditorClassIdentifier: Assembly-CSharp::ClubData
   clubName: Iron
+  yawSpeed: 7
+  pitchSpeed: 4
+  pitchMin: -80
+  pitchMax: 80
+  rotFollow: 45
+  invertY: 1
+  enableCatchup: 1
+  catchupBoost: 3.5
+  catchupTime: 0.25
+  reversalThreshold: 10
+  enableAntiParking: 1
+  yawClamp: 145
+  yawDecay: 1.5
+  pitchDecay: 2
+  yawGainByPitch:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -80
+      value: 0.5
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 80
+      value: 1.4
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  gripLocalPosOffset: {x: 0, y: 0, z: 0}
+  gripLocalEulerOffset: {x: 0, y: 0, z: 0}
   loftDeg: 15
-  powerMultiplier: 1
-  minCarry: 5
-  maxCarry: 40
-  curveMultiplier: 5
-  forgiveness: 0
-  spinMultiplier: 1
+  minLaunchDeg: 1
+  maxLaunchDeg: 65
+  speedForFullPower: 14
+  powerCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  minImpulse: 0.2
+  maxImpulse: 20
+  fpForFullCurve: 12
+  curveAccel: 18
+  minCurveFlatSpeed: 2
+  curveMaxSeconds: 1.2

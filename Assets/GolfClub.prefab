@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 6586648056214758972}
   - component: {fileID: 2862693624745913426}
   - component: {fileID: 2264709515760263338}
+  - component: {fileID: 7917713965923288583}
+  - component: {fileID: 4248198002153653518}
   m_Layer: 7
   m_Name: ClubHead
   m_TagString: Untagged
@@ -99,12 +101,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 668790573156164658}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8be872c082264624bb5ed2b08f7dec75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClubContactLogger
-  vel: {fileID: 0}
+  vel: {fileID: 4248198002153653518}
   faceFrame: {fileID: 0}
   ballMask:
     serializedVersion: 2
@@ -153,6 +155,7 @@ MonoBehaviour:
   drawRays: 1
   raySeconds: 1
   rayLength: 1
+  link: {fileID: 0}
 --- !u!96 &2862693624745913426
 TrailRenderer:
   serializedVersion: 3
@@ -284,6 +287,44 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 0.9999999, z: 0.9999999}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &7917713965923288583
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 668790573156164658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 0
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &4248198002153653518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 668790573156164658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f622b251a1d363e49839f1cd524de03e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ClubHeadVelocity
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &4200646916718582470
 GameObject:
   m_ObjectHideFlags: 0
@@ -295,7 +336,6 @@ GameObject:
   - component: {fileID: 1134995807886081091}
   - component: {fileID: 2221231496837695147}
   - component: {fileID: 7156955577539880624}
-  - component: {fileID: 4103680388806227381}
   m_Layer: 7
   m_Name: GolfClub
   m_TagString: GolfClub
@@ -346,27 +386,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolfClub
   data: {fileID: 11400000, guid: 0a4dc836f1def19419d9cd90834ecced, type: 2}
---- !u!65 &4103680388806227381
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4200646916718582470}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.66, y: 0.52, z: 1.64}
-  m_Center: {x: 0, y: 0, z: 0.58}
 --- !u!1 &5046744013945983892
 GameObject:
   m_ObjectHideFlags: 0
@@ -427,8 +446,8 @@ Transform:
   m_GameObject: {fileID: 7066066773952225598}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00079363585, y: -0, z: -0, w: 0.9999997}
-  m_LocalPosition: {x: 0, y: -0.035, z: 0.558}
-  m_LocalScale: {x: 0.1, y: 0.100000024, z: 1}
+  m_LocalPosition: {x: 0, y: -0.035, z: 0.2}
+  m_LocalScale: {x: 0.1, y: 0.100000024, z: 1.6321}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5796316018711858291}
@@ -514,7 +533,7 @@ Transform:
   m_GameObject: {fileID: 8644590434339368430}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.076}
+  m_LocalPosition: {x: 0, y: -0.031, z: -0.582}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
