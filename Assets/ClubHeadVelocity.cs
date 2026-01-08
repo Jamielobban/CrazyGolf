@@ -14,14 +14,11 @@ public class ClubHeadVelocity : NetworkBehaviour
         prevPos = transform.position;
     }
 
-    void LateUpdate()
+    void FixedUpdate()
     {
-        float dt = Time.deltaTime;
-        if (dt <= 0f) return;
-
+        float dt = Time.fixedDeltaTime;
         Vector3 pos = transform.position;
         VelocityWorld = (pos - prevPos) / dt;
         prevPos = pos;
-    
     }
 }

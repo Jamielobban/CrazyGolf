@@ -1,3 +1,5 @@
+using System.Net.Sockets;
+using UnityEditor.Rendering.LookDev;
 using UnityEngine;
 
 public class ClubBallContactLogger : MonoBehaviour
@@ -42,7 +44,7 @@ public class ClubBallContactLogger : MonoBehaviour
 
     float nextAllowedTime;
 
-    GolferContextLink link;
+    [SerializeField] private GolferContextLink link;
     ClubFaceRollDriver face;
 
     GolfClub club;
@@ -51,10 +53,6 @@ public class ClubBallContactLogger : MonoBehaviour
     void Start()
     {
         if (!faceFrame) faceFrame = transform;
-
-        link = GetComponentInParent<GolferContextLink>();
-        if (link) face = link.face;
-
         if (!vel) vel = GetComponentInParent<ClubHeadVelocity>();
 
         club = GetComponentInParent<GolfClub>();
@@ -63,6 +61,9 @@ public class ClubBallContactLogger : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        if (link == null || link.golfer == null || !link.golfer.IsOwner)
+            return;
+
         if (Time.time < nextAllowedTime) return;
 
         if (((1 << other.gameObject.layer) & ballMask.value) == 0)
@@ -154,16 +155,13 @@ public class ClubBallContactLogger : MonoBehaviour
             return;
         }
 
-        // 2) request server hit
-        if (link != null && link.golfer != null && link.golfer.IsOwner)
-        {
-            link.golfer.RequestBallHitFromClub(ballNO.NetworkObjectId, launchDir, power01, curve01);
-        }
-        else
-        {
-            Debug.LogWarning("[SWING] Missing link.golfer (or not owner) so can't request server hit.");
-        }
+        link.golfer.RequestBallHitFromClub(ballNO.NetworkObjectId, launchDir, power01, curve01);
 
         nextAllowedTime = Time.time + cooldown;
+    }
+
+    public void BindContext(GolferContextLink context)
+    {
+        link = context;
     }
 }
