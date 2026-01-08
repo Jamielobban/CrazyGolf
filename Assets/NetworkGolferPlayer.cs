@@ -37,14 +37,22 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        base.OnNetworkSpawn();
+
         myBallNetworkId.OnValueChanged += OnMyBallIdChanged;
+
+        // ✅ Register context here
+        if (PlayerRegistry.Instance != null)
+        {
+            var ctx = GetComponent<GolferContextLink>();
+            if (ctx != null)
+                PlayerRegistry.Instance.Register(ctx);
+        }
 
         if (IsOwner)
         {
             input = new PlayerInputActions();
             input.Enable();
-
-            // Optional fallback: press hit to do a simple forward hit at full power
             input.Player.Hit.performed += _ => hitPressed = true;
         }
 
@@ -54,6 +62,14 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        // ✅ Unregister context here
+        if (PlayerRegistry.Instance != null)
+        {
+            var ctx = GetComponent<GolferContextLink>();
+            if (ctx != null)
+                PlayerRegistry.Instance.Unregister(ctx);
+        }
+
         myBallNetworkId.OnValueChanged -= OnMyBallIdChanged;
 
         if (IsOwner && input != null)
