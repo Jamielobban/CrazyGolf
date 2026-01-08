@@ -309,6 +309,7 @@ GameObject:
   - component: {fileID: 1134995807886081091}
   - component: {fileID: 2221231496837695147}
   - component: {fileID: 7156955577539880624}
+  - component: {fileID: 4139867858499255774}
   m_Layer: 7
   m_Name: GolfClub
   m_TagString: GolfClub
@@ -359,6 +360,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolfClub
   data: {fileID: 11400000, guid: 0a4dc836f1def19419d9cd90834ecced, type: 2}
+--- !u!114 &4139867858499255774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4200646916718582470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6eb26f30483eccc47a5042f2d3536216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ClubContextBinder
 --- !u!1 &5046744013945983892
 GameObject:
   m_ObjectHideFlags: 0

@@ -18,6 +18,8 @@ public class ClubVisualBinder : NetworkBehaviour
     private GameObject currentClub;
     private int currentId = -999;
 
+    private Coroutine attachRoutine;
+
     public override void OnNetworkSpawn()
     {
         if (!link) link = GetComponent<GolferContextLink>();
@@ -68,20 +70,17 @@ public class ClubVisualBinder : NetworkBehaviour
         }
 
         currentClub = Instantiate(prefab);
-        Debug.Log("Instantiated club on club visual binder chheck");
+        
+        var binder = currentClub.GetComponent<ClubContextBinder>();
+        if (binder) binder.Bind(link);
+        else Debug.LogWarning("[ClubVisualBinder] Club prefab missing ClubContextBinder.");
 
-        //Debug.Log($"[ClubVisualBinder] link={(link ? link.name : "NULL")} golfer={(link && link.golfer ? link.golfer.name : "NULL")} isOwner={(link && link.golfer ? link.golfer.IsOwner : false)}");
-        foreach (var logger in currentClub.GetComponentsInChildren<ClubBallContactLogger>(true))
+        if (attachRoutine != null)
         {
-            //Debug.Log(logger.gameObject.name);
-            logger.BindContext(link);
+            StopCoroutine(attachRoutine);
+            attachRoutine = null;
         }
-        var ownerNb = link != null ? (NetworkBehaviour)link.golfer : null;
-        foreach (var v in currentClub.GetComponentsInChildren<ClubHeadVelocity>(true))
-        {
-            v.BindOwner(ownerNb);
-        }
-        StartCoroutine(AttachWhenRigReady());
+        attachRoutine = StartCoroutine(AttachWhenRigReady(currentClub));
     }
 
     private GameObject GetVisualPrefab(int id)
@@ -91,22 +90,31 @@ public class ClubVisualBinder : NetworkBehaviour
         return null;
     }
 
-    private IEnumerator AttachWhenRigReady()
+    private IEnumerator AttachWhenRigReady(GameObject clubInstance)
     {
-        // Wait until the hand rig for THIS player exists (on this client)
+        // Safety: club might be destroyed before rig exists
+        if (!clubInstance) yield break;
+
         Transform gripPivot = null;
 
         while (gripPivot == null)
         {
+            // If club changed while waiting, abort
+            if (!clubInstance || clubInstance != currentClub)
+                yield break;
+
             gripPivot = FindGripPivotForPlayer(OwnerClientId);
             yield return null;
         }
 
-        AttachToPivot(currentClub.transform, gripPivot);
+        AttachToPivot(clubInstance.transform, gripPivot);
 
-        // set data
-        var gc = currentClub.GetComponent<GolfClub>();
-        if (gc && link) link.SetEquippedClub(gc);
+        // Set equipped data ONCE
+        var gc = clubInstance.GetComponent<GolfClub>();
+        if (gc && link)
+            link.SetEquippedClub(gc);
+
+        attachRoutine = null;
     }
 
     private Transform FindGripPivotForPlayer(ulong playerOwnerClientId)
