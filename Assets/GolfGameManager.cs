@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
+
 public class GolfGameManager : MonoBehaviour
 {
     [SerializeField] private NetworkObject golfBallPrefab;
@@ -29,21 +30,24 @@ public class GolfGameManager : MonoBehaviour
         nm.OnClientConnectedCallback += OnClientConnected;
         nm.OnClientDisconnectCallback += OnClientDisconnected;
 
+        if (nm.SceneManager != null)
+            nm.SceneManager.OnSceneEvent += OnSceneEvent;
+
+        // Host/server already running: spawn for everyone already connected.
+        // IMPORTANT: if Scene Management is enabled, don't spawn immediately here.
         if (nm.IsServer)
         {
-            foreach (var kv in nm.ConnectedClients)
+            if (!nm.NetworkConfig.EnableSceneManagement)
             {
-                ulong clientId = kv.Key;
-
-                EnsureBallForClient(clientId);
-                EnsureRigForClient(clientId);
-
-                var client = kv.Value;
-                if (client.PlayerObject)
-                {
-                    var player = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
-                    if (player) player.EquippedClubId.Value = 0;
-                }
+                foreach (var kv in nm.ConnectedClients)
+                    SpawnAllForClient(kv.Key);
+            }
+            else
+            {
+                // With scene management, we wait for SynchronizeComplete per client.
+                // Host (server local client) is effectively "ready", so you *can* spawn for host now,
+                // but it's also fine to let it come through the scene event depending on NGO version.
+                SpawnAllForClient(nm.LocalClientId);
             }
         }
     }
@@ -55,6 +59,9 @@ public class GolfGameManager : MonoBehaviour
 
         nm.OnClientConnectedCallback -= OnClientConnected;
         nm.OnClientDisconnectCallback -= OnClientDisconnected;
+
+        if (nm.SceneManager != null)
+            nm.SceneManager.OnSceneEvent -= OnSceneEvent;
     }
 
     private void OnClientConnected(ulong clientId)
@@ -62,15 +69,65 @@ public class GolfGameManager : MonoBehaviour
         var nm = NetworkManager.Singleton;
         if (nm == null || !nm.IsServer) return;
 
+        // Host should spawn immediately (host's PlayerObject exists very quickly)
+        if (clientId == nm.LocalClientId)
+        {
+            Debug.Log($"[GolfGameManager] Host connected ({clientId}) -> spawn now");
+            StartCoroutine(SpawnAllWhenPlayerReady(clientId));
+            return;
+        }
+
+        // Remote clients: wait until their PlayerObject exists (safe point)
+        Debug.Log($"[GolfGameManager] Client {clientId} connected -> wait for PlayerObject then spawn");
+        StartCoroutine(SpawnAllWhenPlayerReady(clientId));
+    }
+
+    private void OnSceneEvent(SceneEvent sceneEvent)
+    {
+        if (!NetworkManager.Singleton.IsServer) return;
+
+        if (sceneEvent.SceneEventType == SceneEventType.SynchronizeComplete)
+        {
+            StartCoroutine(SpawnAllWhenPlayerReady(sceneEvent.ClientId));
+        }
+    }
+
+    private void SpawnAllForClient(ulong clientId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || !nm.IsServer) return;
+
+        // Wait until PlayerObject exists (important even after sync complete sometimes)
+        if (!nm.ConnectedClients.TryGetValue(clientId, out var client) || client.PlayerObject == null)
+        {
+            StartCoroutine(SpawnAllWhenPlayerReady(clientId));
+            return;
+        }
+
         EnsureBallForClient(clientId);
         EnsureRigForClient(clientId);
 
-        if (nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject)
+        var player = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
+        if (player)
+            player.EquippedClubId.Value = 0;
+    }
+
+   private IEnumerator SpawnAllWhenPlayerReady(ulong clientId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null) yield break;
+
+        while (nm.IsServer &&
+            (!nm.ConnectedClients.TryGetValue(clientId, out var client) || client.PlayerObject == null))
         {
-            var player = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
-            if (player)
-                player.EquippedClubId.Value = 0;
+            yield return null;
         }
+
+        // one extra frame helps avoid edge timing
+        yield return null;
+
+        Debug.Log($"[GolfGameManager] PlayerObject ready for {clientId} -> spawning ball/rig");
+        SpawnAllForClient(clientId);
     }
 
     private void OnClientDisconnected(ulong clientId)
@@ -130,11 +187,9 @@ public class GolfGameManager : MonoBehaviour
         ballByClient[clientId] = ballNO;
 
         AssignBallIdToPlayer(clientId, ballNO.NetworkObjectId);
-
-        //Debug.Log($"[GolfGameManager] Spawned ball for client {clientId} at {pos}");
     }
 
-     private void EnsureRigForClient(ulong clientId)
+    private void EnsureRigForClient(ulong clientId)
     {
         var nm = NetworkManager.Singleton;
         if (nm == null || !nm.IsServer) return;
@@ -149,7 +204,7 @@ public class GolfGameManager : MonoBehaviour
             return;
 
         var rigNO = Instantiate(handRigPrefab);
-        rigNO.Spawn();
+        rigNO.SpawnWithOwnership(clientId);
 
         var rig = rigNO.GetComponent<NetworkHandRig>();
         if (rig == null)
@@ -171,6 +226,7 @@ public class GolfGameManager : MonoBehaviour
             if (teeSpawns[idx] != null)
                 return teeSpawns[idx].position;
         }
+
         var nm = NetworkManager.Singleton;
         if (nm != null && nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
         {
