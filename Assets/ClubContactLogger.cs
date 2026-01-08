@@ -53,7 +53,7 @@ public class ClubBallContactLogger : MonoBehaviour
     void Start()
     {
         if (!faceFrame) faceFrame = transform;
-        if (!vel) vel = GetComponentInParent<ClubHeadVelocity>();
+        if (!vel) vel = GetComponent<ClubHeadVelocity>();
 
         club = GetComponentInParent<GolfClub>();
         if (club) data = club.data;

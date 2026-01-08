@@ -1,22 +1,29 @@
 using UnityEngine;
 using Unity.Netcode;
 
-public class ClubHeadVelocity : NetworkBehaviour
+public class ClubHeadVelocity : MonoBehaviour
 {
     public Vector3 VelocityWorld { get; private set; }
     public float Speed => VelocityWorld.magnitude;
 
-    Vector3 prevPos;
+    private Vector3 prevPos;
+    private NetworkBehaviour owner;   // we only need IsOwner
 
-    public override void OnNetworkSpawn()
+    public void BindOwner(NetworkBehaviour ownerBehaviour)
     {
-        if (!IsOwner) { enabled = false; return; }
+        owner = ownerBehaviour;
         prevPos = transform.position;
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
+        // If we know an owner, only compute on the owning client
+        if (owner != null && !owner.IsOwner)
+            return;
+
         float dt = Time.fixedDeltaTime;
+        if (dt <= 0.0001f) return;
+
         Vector3 pos = transform.position;
         VelocityWorld = (pos - prevPos) / dt;
         prevPos = pos;

@@ -14,8 +14,7 @@ GameObject:
   - component: {fileID: 6586648056214758972}
   - component: {fileID: 2862693624745913426}
   - component: {fileID: 2264709515760263338}
-  - component: {fileID: 7917713965923288583}
-  - component: {fileID: 4248198002153653518}
+  - component: {fileID: 6925361000748650394}
   m_Layer: 7
   m_Name: ClubHead
   m_TagString: Untagged
@@ -106,7 +105,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8be872c082264624bb5ed2b08f7dec75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClubContactLogger
-  vel: {fileID: 4248198002153653518}
+  vel: {fileID: 6925361000748650394}
   faceFrame: {fileID: 0}
   ballMask:
     serializedVersion: 2
@@ -287,32 +286,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 0.9999999, z: 0.9999999}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &7917713965923288583
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 668790573156164658}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 0
-  InScenePlacedSourceGlobalObjectIdHash: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
---- !u!114 &4248198002153653518
+--- !u!114 &6925361000748650394
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -324,7 +298,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f622b251a1d363e49839f1cd524de03e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClubHeadVelocity
-  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &4200646916718582470
 GameObject:
   m_ObjectHideFlags: 0

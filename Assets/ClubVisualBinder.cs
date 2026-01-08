@@ -76,6 +76,11 @@ public class ClubVisualBinder : NetworkBehaviour
             //Debug.Log(logger.gameObject.name);
             logger.BindContext(link);
         }
+        var ownerNb = link != null ? (NetworkBehaviour)link.golfer : null;
+        foreach (var v in currentClub.GetComponentsInChildren<ClubHeadVelocity>(true))
+        {
+            v.BindOwner(ownerNb);
+        }
         StartCoroutine(AttachWhenRigReady());
     }
 
