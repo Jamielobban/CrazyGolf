@@ -24,7 +24,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 106}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 119
+  controlID: 7819
   draggingID: 0
 --- !u!114 &2
 MonoBehaviour:
@@ -155,7 +155,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 106}
   m_MaxSize: {x: 16192, y: 16192}
   vertical: 1
-  controlID: 120
+  controlID: 7820
   draggingID: 0
 --- !u!114 &4
 MonoBehaviour:
@@ -181,7 +181,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 56}
   m_MaxSize: {x: 16192, y: 8096}
   vertical: 0
-  controlID: 50
+  controlID: 7741
   draggingID: 0
 --- !u!114 &5
 MonoBehaviour:
@@ -251,14 +251,14 @@ MonoBehaviour:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs:
-      - m_Data: 76440
+      - m_Data: -3890
       m_LastClickedID:
-        m_Data: 0
+        m_Data: -3890
       m_ExpandedIDs:
-      - m_Data: -59994
-      - m_Data: -59790
-      - m_Data: -59566
-      - m_Data: -58624
+      - m_Data: -12616
+      - m_Data: -7566
+      - m_Data: -1302
+      - m_Data: 57998
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -696,7 +696,7 @@ MonoBehaviour:
       sizeOverridden: 0
     - dockPosition: 0
       containerId: overlay-toolbar__left
-      displayed: 0
+      displayed: 1
       id: Terrain Tools
       index: 0
       contents: '{"m_Layout":4,"m_Collapsed":false,"m_Folded":false,"m_Floating":false,"m_FloatingSnapOffset":{"x":0.0,"y":0.0},"m_SnapOffsetDelta":{"x":0.0,"y":0.0},"m_FloatingSnapCorner":0,"m_Size":{"x":0.0,"y":0.0},"m_SizeOverridden":false}'
@@ -863,9 +863,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: -10.714624, y: -6.186084, z: 10.94649}
+    m_Target: {x: -25.734407, y: -0.5283804, z: 3.3857887}
     speed: 2
-    m_Value: {x: -10.714624, y: -6.186084, z: 10.94649}
+    m_Value: {x: -25.734407, y: -0.5283804, z: 3.3857887}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -911,13 +911,13 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: 0.15949221, y: -0.087249465, z: 0.014150093, w: 0.9832442}
+    m_Target: {x: 0.070776686, y: -0.66095555, z: 0.06287595, w: 0.7445118}
     speed: 2
-    m_Value: {x: 0.15949064, y: -0.087248616, z: 0.014149955, w: 0.9832346}
+    m_Value: {x: 0.07188884, y: -0.6608199, z: 0.06386353, w: 0.7443591}
   m_Size:
-    m_Target: 10
+    m_Target: 11.342476
     speed: 2
-    m_Value: 10
+    m_Value: 11.342476
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -975,7 +975,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 50}
   m_MaxSize: {x: 16192, y: 8096}
   vertical: 0
-  controlID: 121
+  controlID: 7821
   draggingID: 0
 --- !u!114 &10
 MonoBehaviour:
@@ -1054,7 +1054,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Scenes
+    - Assets/Stylized_Nature_Mega_Kit
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1064,7 +1064,7 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 46
   m_LastFolders:
-  - Assets/Scenes
+  - Assets/Stylized_Nature_Mega_Kit
   m_LastFoldersGridSize: 46
   m_LastProjectPath: F:\CrazyGolf
   m_LockTracker:
@@ -1073,12 +1073,12 @@ MonoBehaviour:
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs:
-    - m_Data: 76354
+    - m_Data: 58664
     m_LastClickedID:
-      m_Data: 76354
+      m_Data: 58664
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 76352
+    - m_Data: 58554
     - m_Data: 1000000000
     - m_Data: 2147483647
     m_RenameOverlay:
@@ -1111,7 +1111,11 @@ MonoBehaviour:
     m_SelectedIDs: []
     m_LastClickedID:
       m_Data: 0
-    m_ExpandedIDs: []
+    m_ExpandedIDs:
+    - m_Data: 0
+    - m_Data: 58554
+    - m_Data: 1000000000
+    - m_Data: 2147483647
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1139,10 +1143,11 @@ MonoBehaviour:
       m_ResourceFile: 
   m_ListAreaState:
     m_SelectedInstanceIDs:
-    - m_Data: 76440
-    m_LastClickedInstanceID: 76440
-    m_HadKeyboardFocusLastEvent: 1
-    m_ExpandedInstanceIDs: []
+    - m_Data: -3890
+    m_LastClickedInstanceID: -3890
+    m_HadKeyboardFocusLastEvent: 0
+    m_ExpandedInstanceIDs:
+    - m_Data: 78818
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1160,7 +1165,7 @@ MonoBehaviour:
       m_OriginalEventType: 11
       m_IsRenamingFilename: 1
       m_TrimLeadingAndTrailingWhitespace: 0
-      m_ClientGUIView: {fileID: 0}
+      m_ClientGUIView: {fileID: 10}
     m_CreateAssetUtility:
       m_EndAction: {fileID: 0}
       m_InstanceID: 0
@@ -1250,7 +1255,7 @@ MonoBehaviour:
     m_DynamicPanelBehavior: 0
   m_LockTracker:
     m_IsLocked: 0
-  m_LastSelectedObjectID: 0
+  m_LastSelectedObjectID: -3890
 --- !u!114 &14
 MonoBehaviour:
   m_ObjectHideFlags: 52
