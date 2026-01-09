@@ -23,7 +23,7 @@ MonoBehaviour:
   catchupBoost: 3.5
   catchupTime: 0.25
   reversalThreshold: 10
-  enableAntiParking: 1
+  enableAntiParking: 0
   yawClamp: 145
   yawDecay: 1.5
   pitchDecay: 2
