@@ -26,14 +26,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 15182245117045011}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.3067889, y: -0, z: -0, w: 0.9517776}
+  m_LocalRotation: {x: 0.21277797, y: -0, z: -0, w: 0.97710055}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 640260035600293287}
   m_Father: {fileID: 1447687810721053161}
-  m_LocalEulerAnglesHint: {x: 35.732, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 24.57, y: 0, z: 0}
 --- !u!33 &2685591581501937242
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -319,7 +319,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3120032765
+  GlobalObjectIdHash: 1052692653
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -439,6 +439,8 @@ MonoBehaviour:
   visualsToHideOwner:
   - {fileID: 7167281672544040281}
   cameraRigPrefab: {fileID: 5422043875463464133, guid: 79c70c47184dad449a5402fb9575b52d, type: 3}
+  NetAimRotation:
+    m_InternalValue: {x: 0, y: 0, z: 0, w: 1}
 --- !u!114 &156107744368656327
 MonoBehaviour:
   m_ObjectHideFlags: 0
