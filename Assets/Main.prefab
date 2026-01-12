@@ -26,14 +26,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 15182245117045011}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.21277797, y: -0, z: -0, w: 0.97710055}
+  m_LocalRotation: {x: 0.24517281, y: -0, z: -0, w: 0.96947944}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 640260035600293287}
   m_Father: {fileID: 1447687810721053161}
-  m_LocalEulerAnglesHint: {x: 24.57, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 28.384, y: 0, z: 0}
 --- !u!33 &2685591581501937242
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -89,6 +89,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &831580625026313543
 GameObject:
@@ -256,6 +257,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &268331950829398995
 CapsuleCollider:
@@ -415,7 +417,7 @@ MonoBehaviour:
     m_Bits: 64
   mineOnly: 1
   minImpulse: 0.1
-  maxImpulse: 128
+  maxImpulse: 85
   EquippedClubId:
     m_InternalValue: -1
 --- !u!114 &2765047706870737222
@@ -431,9 +433,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkRigidbodyPlayer
   ShowTopMostFoldoutHeaderGroup: 1
-  maxSpeed: 5
+  maxSpeed: 35
   swingMaxSpeed: 0.5
-  accel: 20
+  accel: 75
   yawLerp: 20
   cameraRoot: {fileID: 0}
   visualsToHideOwner:
@@ -542,7 +544,7 @@ Transform:
   m_GameObject: {fileID: 4339547246322372314}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.87, y: 0.75, z: 1.75}
+  m_LocalPosition: {x: 0.18, y: 0.98, z: 2.18}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -603,6 +605,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &4956745005848386466
 GameObject:
@@ -757,6 +760,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &6580046388599012831
 GameObject:
@@ -817,7 +821,7 @@ Transform:
   m_GameObject: {fileID: 9074168816960060713}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.901, z: 1.83}
+  m_LocalPosition: {x: 0, y: -0.885, z: 2.171}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -878,6 +882,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!135 &4667223350920974681
 SphereCollider:
