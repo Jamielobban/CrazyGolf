@@ -1,167 +1,126 @@
-using System.Net.Sockets;
-using UnityEditor.Rendering.LookDev;
+// ClubBallContactLogger.cs
 using UnityEngine;
 
 public class ClubBallContactLogger : MonoBehaviour
 {
-    [Header("Refs (optional; otherwise resolved via GolferContextLink / parents)")]
+    [Header("Refs")]
     [SerializeField] private ClubHeadVelocity vel;
-
-    [Tooltip("Transform that defines the club face orientation. Clubface normal is local -X.")]
     [SerializeField] private Transform faceFrame;
 
     [Header("Ball")]
     [SerializeField] private LayerMask ballMask;
 
     [Header("Log Control")]
-    [SerializeField] private float minSpeedToLog = 1.0f;
+    [SerializeField] private float minSpeedToHit = 1.0f;
     [SerializeField] private float cooldown = 0.25f;
 
-    [Header("Power")]
-    [Tooltip("Speed (m/s) that maps to normalized=1.0 before the curve.")]
-    [SerializeField] private float speedForFullPower = 14f;
-
-    [Tooltip("Maps normalized speed (0..1) -> power01 (0..1). Make the start flatter to nerf tiny swings.")]
-    [SerializeField] private AnimationCurve powerCurve =
-        AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-
-    [Header("Curvature (debug only)")]
-    [Tooltip("How many degrees of side curve you pretend per degree of (face-path).")]
-    [SerializeField] private float curvePerDeg = 1.0f;
-    [SerializeField] private float maxCurveDeg = 30f;
-
-    [SerializeField] private float fpForFullCurve = 12f;
-
-    [Header("Launch")]
-    [Tooltip("launchDeg ≈ loft + attack. Clamped.")]
-    [SerializeField] private float minLaunchDeg = 1f;
-    [SerializeField] private float maxLaunchDeg = 65f;
-
-    [Header("Debug draw")]
-    [SerializeField] private bool drawRays = true;
-    [SerializeField] private float raySeconds = 1.0f;
-    [SerializeField] private float rayLength = 1.0f;
-
-    float nextAllowedTime;
+    private float nextAllowedTime;
 
     [SerializeField] private GolferContextLink link;
-    ClubFaceRollDriver face;
 
-    GolfClub club;
-    ClubData data;
+    private GolfClub club;
+    private ClubData data;
 
-    void Start()
+    private void Awake()
     {
         if (!faceFrame) faceFrame = transform;
-        if (!vel) vel = GetComponent<ClubHeadVelocity>();
+        if (!vel) vel = GetComponentInParent<ClubHeadVelocity>();
 
         club = GetComponentInParent<GolfClub>();
         if (club) data = club.data;
     }
 
-    void OnTriggerEnter(Collider other)
+    public void BindContext(GolferContextLink context) => link = context;
+
+    private void OnTriggerEnter(Collider other)
     {
+        // Owner-only (prevents double hits)
         if (link == null || link.golfer == null || !link.golfer.IsOwner)
             return;
 
-        if (Time.time < nextAllowedTime) return;
+        if (Time.time < nextAllowedTime)
+            return;
 
         if (((1 << other.gameObject.layer) & ballMask.value) == 0)
             return;
 
-        if (!vel) return;
+        if (vel == null)
+            return;
 
-        float speed = vel.Speed;
-        if (speed < minSpeedToLog) return;
+        // Use RAW speed for power (captures peak better)
+        float speed = vel.RawSpeed;
+        if (speed < minSpeedToHit)
+            return;
 
+        // Use smoothed velocity for direction stability
         Vector3 v = vel.VelocityWorld;
 
-        // PATH from velocity (XZ)
+        // --- PATH from velocity on XZ ---
         Vector3 vFlat = new Vector3(v.x, 0f, v.z);
         float flatSpeed = vFlat.magnitude;
-        if (flatSpeed < 0.001f) return;
+        if (flatSpeed < 0.001f)
+            return;
 
         Vector3 pathDir = vFlat / flatSpeed;
         float pathYaw = Mathf.Atan2(pathDir.x, pathDir.z) * Mathf.Rad2Deg;
 
-        // Attack angle from velocity
+        // Attack angle (up/down) from velocity
         float attackDeg = Mathf.Atan2(v.y, flatSpeed) * Mathf.Rad2Deg;
 
-        // FACE from real face normal (local -X), flattened on XZ
-        Vector3 faceN = faceFrame.TransformDirection(Vector3.left); // -X
+        // --- FACE from club face normal (local -X) flattened on XZ ---
+        Vector3 faceN = faceFrame.TransformDirection(Vector3.left); // -X = face normal
         Vector3 faceFlat = new Vector3(faceN.x, 0f, faceN.z);
         float faceFlatMag = faceFlat.magnitude;
-        Vector3 faceDir = (faceFlatMag > 0.001f) ? (faceFlat / faceFlatMag) : pathDir;
 
+        Vector3 faceDir = (faceFlatMag > 0.001f) ? (faceFlat / faceFlatMag) : pathDir;
         float faceYaw = Mathf.Atan2(faceDir.x, faceDir.z) * Mathf.Rad2Deg;
+
         float faceMinusPath = Mathf.DeltaAngle(pathYaw, faceYaw);
 
-        float curve01 = Mathf.Clamp(faceMinusPath / fpForFullCurve, -1f, 1f);
 
-        // Club data
+        // Curve normalized (-1..1)
+        float curve01 = Mathf.Clamp(faceMinusPath / Mathf.Max(0.001f, link.Data.fpForFullCurve), -1f, 1f);
+
+        // Scale curve intent by speed (prevents tiny brushes making full hook/slice)
+        float speed01ForCurve = Mathf.Clamp01(speed / Mathf.Max(0.001f, link.Data.speedForFullPower));
+        curve01 *= speed01ForCurve;
+        Debug.Log($"[HIT] speed={speed:F1} pathYaw={pathYaw:F1} faceYaw={faceYaw:F1} faceMinusPath={faceMinusPath:F1} curve01={curve01:F2} fp={link.Data.fpForFullCurve:F2}");
+
+        // Loft
         float loftDeg = data ? data.loftDeg : 0f;
 
-        // Power (curve)
-        float norm = Mathf.Clamp01(speed / Mathf.Max(0.001f, speedForFullPower));
-        float power01 = Mathf.Clamp01(powerCurve.Evaluate(norm));
+        // Power from speed curve
+        float norm = Mathf.Clamp01(speed / Mathf.Max(0.001f, link.Data.speedForFullPower));
+        float power01 = Mathf.Clamp01(link.Data.powerCurve.Evaluate(norm));
 
         // Launch angle
-        float launchDeg = Mathf.Clamp(loftDeg + attackDeg, minLaunchDeg, maxLaunchDeg);
+        float launchDeg = Mathf.Clamp(loftDeg + attackDeg, link.Data.minLaunchDeg, link.Data.maxLaunchDeg);
 
-        // ---- BUILD A 3D LAUNCH DIRECTION THAT ALWAYS GOES UP ----
+        // Build a launch direction that always goes upward-ish
         Vector3 rightAxis = Vector3.Cross(pathDir, Vector3.up);
         if (rightAxis.sqrMagnitude < 0.0001f) rightAxis = transform.right;
         rightAxis.Normalize();
 
         Vector3 launchDir = Quaternion.AngleAxis(launchDeg, rightAxis) * pathDir;
 
-        if (launchDir.y < 0f)
+        // If we accidentally aimed downward, flip the axis
+        if (launchDir.y < 0.05f)
             launchDir = Quaternion.AngleAxis(launchDeg, -rightAxis) * pathDir;
 
         if (launchDir.y < 0.05f) launchDir.y = 0.05f;
-
         launchDir.Normalize();
 
-        // Debug-only curvature preview
-        float curveDeg = Mathf.Clamp(faceMinusPath * curvePerDeg, -maxCurveDeg, maxCurveDeg);
-
-        float faceRoll = face ? face.CurrentFaceRoll : 0f;
-
-        if (drawRays)
-        {
-            Debug.DrawRay(transform.position, pathDir * rayLength, Color.yellow, raySeconds); // path
-            Debug.DrawRay(transform.position, faceDir * rayLength, Color.cyan, raySeconds);  // face
-        }
-
-        string clubName = (data && !string.IsNullOrEmpty(data.clubName)) ? data.clubName : "Club";
-        string shape =
-            Mathf.Abs(faceMinusPath) < 1.5f ? "straight" :
-            (faceMinusPath < 0f ? "draw" : "fade");
-
-        Debug.Log(
-            $"[SWING] {clubName} " +
-            $"spd={speed:F1}m/s norm={norm:F2} pow={power01:F2} atk={attackDeg:F1}° loft={loftDeg:F0}° launch≈{launchDeg:F1}° " +
-            $"fp={faceMinusPath:F1}° ({shape}) curve≈{curveDeg:F1}° " +
-            $"path={pathYaw:F1}° face={faceYaw:F1}° roll={faceRoll:F1}° " +
-            $"launchDir={launchDir} ball={other.name}"
-        );
-
-        // 1) get the ball's NetworkObjectId
+        // Get ball NetworkObjectId
         var ballNO = other.GetComponentInParent<Unity.Netcode.NetworkObject>();
         if (!ballNO)
         {
-            Debug.LogWarning("[SWING] Hit ball layer but no NetworkObject found on ball.");
             nextAllowedTime = Time.time + cooldown;
             return;
         }
 
+        // Request server hit (your existing method)
         link.golfer.RequestBallHitFromClub(ballNO.NetworkObjectId, launchDir, power01, curve01);
 
         nextAllowedTime = Time.time + cooldown;
-    }
-
-    public void BindContext(GolferContextLink context)
-    {
-        link = context;
     }
 }

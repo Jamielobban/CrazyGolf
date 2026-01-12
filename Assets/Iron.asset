@@ -19,11 +19,11 @@ MonoBehaviour:
   pitchMax: 80
   rotFollow: 45
   invertY: 1
-  enableCatchup: 1
+  enableCatchup: 0
   catchupBoost: 3.5
   catchupTime: 0.25
   reversalThreshold: 10
-  enableAntiParking: 0
+  enableAntiParking: 1
   yawClamp: 145
   yawDecay: 1.5
   pitchDecay: 2
@@ -53,10 +53,10 @@ MonoBehaviour:
     m_RotationOrder: 4
   gripLocalPosOffset: {x: 0, y: 0, z: 0}
   gripLocalEulerOffset: {x: 0, y: 0, z: 0}
-  loftDeg: 15
-  minLaunchDeg: 1
+  loftDeg: 30
+  minLaunchDeg: 15
   maxLaunchDeg: 65
-  speedForFullPower: 14
+  speedForFullPower: 30
   powerCurve:
     serializedVersion: 2
     m_Curve:
@@ -82,8 +82,8 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   minImpulse: 0.2
-  maxImpulse: 20
-  fpForFullCurve: 12
-  curveAccel: 18
-  minCurveFlatSpeed: 2
-  curveMaxSeconds: 1.2
+  maxImpulse: 0.3
+  fpForFullCurve: 180
+  curveAccel: 0
+  minCurveFlatSpeed: 0
+  curveMaxSeconds: 0
