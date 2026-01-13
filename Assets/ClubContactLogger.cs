@@ -14,12 +14,29 @@ public class ClubBallContactLogger : MonoBehaviour
     [SerializeField] private float minSpeedToHit = 1.0f;
     [SerializeField] private float cooldown = 0.25f;
 
+    [Header("Power")]
+    [SerializeField] private float speedForFullPower = 14f;
+    [SerializeField] private AnimationCurve powerCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+    [Header("Curve (legacy tuning kept but not used for intent)")]
+    [SerializeField] private float fpForFullCurve = 12f; // kept so you can revert easily
+
+    [Header("TEMP Curve Intent (debug)")]
+    [SerializeField] private float debugCurveStrength = 0.35f; // hold 4/5 to apply this (scaled by speed)
+
+    [Header("Launch")]
+    [SerializeField] private float minLaunchDeg = 1f;
+    [SerializeField] private float maxLaunchDeg = 65f;
+
     private float nextAllowedTime;
 
     [SerializeField] private GolferContextLink link;
 
     private GolfClub club;
     private ClubData data;
+
+    // live intent (-debugCurveStrength..+debugCurveStrength)
+    public float curveIntent01;
 
     private void Awake()
     {
@@ -28,6 +45,18 @@ public class ClubBallContactLogger : MonoBehaviour
 
         club = GetComponentInParent<GolfClub>();
         if (club) data = club.data;
+    }
+
+    // TEMP: hold 4 for left, 5 for right
+    private void Update()
+    {
+        curveIntent01 = 0f;
+
+        if (Input.GetKey(KeyCode.Alpha4))
+            curveIntent01 = -debugCurveStrength;
+
+        if (Input.GetKey(KeyCode.Alpha5))
+            curveIntent01 = debugCurveStrength;
     }
 
     public void BindContext(GolferContextLink context) => link = context;
@@ -62,39 +91,37 @@ public class ClubBallContactLogger : MonoBehaviour
             return;
 
         Vector3 pathDir = vFlat / flatSpeed;
-        float pathYaw = Mathf.Atan2(pathDir.x, pathDir.z) * Mathf.Rad2Deg;
 
         // Attack angle (up/down) from velocity
         float attackDeg = Mathf.Atan2(v.y, flatSpeed) * Mathf.Rad2Deg;
 
-        // --- FACE from club face normal (local -X) flattened on XZ ---
+        // --- FACE (still computed, but NOT used for curve intent anymore; kept for future) ---
         Vector3 faceN = faceFrame.TransformDirection(Vector3.left); // -X = face normal
         Vector3 faceFlat = new Vector3(faceN.x, 0f, faceN.z);
         float faceFlatMag = faceFlat.magnitude;
-
         Vector3 faceDir = (faceFlatMag > 0.001f) ? (faceFlat / faceFlatMag) : pathDir;
-        float faceYaw = Mathf.Atan2(faceDir.x, faceDir.z) * Mathf.Rad2Deg;
 
+        // (legacy values if you want to log them)
+        float pathYaw = Mathf.Atan2(pathDir.x, pathDir.z) * Mathf.Rad2Deg;
+        float faceYaw = Mathf.Atan2(faceDir.x, faceDir.z) * Mathf.Rad2Deg;
         float faceMinusPath = Mathf.DeltaAngle(pathYaw, faceYaw);
 
+        // --- CURVE FROM INTENT (scaled by speed) ---
+        float speed01ForCurve = Mathf.Clamp01(speed / Mathf.Max(0.001f, speedForFullPower));
+        float curve01 = curveIntent01 * speed01ForCurve;
 
-        // Curve normalized (-1..1)
-        float curve01 = Mathf.Clamp(faceMinusPath / Mathf.Max(0.001f, link.Data.fpForFullCurve), -1f, 1f);
-
-        // Scale curve intent by speed (prevents tiny brushes making full hook/slice)
-        float speed01ForCurve = Mathf.Clamp01(speed / Mathf.Max(0.001f, link.Data.speedForFullPower));
-        curve01 *= speed01ForCurve;
-        Debug.Log($"[HIT] speed={speed:F1} pathYaw={pathYaw:F1} faceYaw={faceYaw:F1} faceMinusPath={faceMinusPath:F1} curve01={curve01:F2} fp={link.Data.fpForFullCurve:F2}");
+        // Optional safety clamp while testing:
+        // curve01 = Mathf.Clamp(curve01, -0.6f, 0.6f);
 
         // Loft
         float loftDeg = data ? data.loftDeg : 0f;
 
         // Power from speed curve
-        float norm = Mathf.Clamp01(speed / Mathf.Max(0.001f, link.Data.speedForFullPower));
-        float power01 = Mathf.Clamp01(link.Data.powerCurve.Evaluate(norm));
+        float norm = Mathf.Clamp01(speed / Mathf.Max(0.001f, speedForFullPower));
+        float power01 = Mathf.Clamp01(powerCurve.Evaluate(norm));
 
         // Launch angle
-        float launchDeg = Mathf.Clamp(loftDeg + attackDeg, link.Data.minLaunchDeg, link.Data.maxLaunchDeg);
+        float launchDeg = Mathf.Clamp(loftDeg + attackDeg, minLaunchDeg, maxLaunchDeg);
 
         // Build a launch direction that always goes upward-ish
         Vector3 rightAxis = Vector3.Cross(pathDir, Vector3.up);
@@ -118,9 +145,12 @@ public class ClubBallContactLogger : MonoBehaviour
             return;
         }
 
-        // Request server hit (your existing method)
+        // Request server hit (curve01 now comes from intent)
         link.golfer.RequestBallHitFromClub(ballNO.NetworkObjectId, launchDir, power01, curve01);
 
         nextAllowedTime = Time.time + cooldown;
+
+        // Optional debug:
+        // Debug.Log($"[HIT] speed={speed:F1} power01={power01:F2} curveIntent={curveIntent01:F2} curve01={curve01:F2} f-p={faceMinusPath:F1}");
     }
 }
