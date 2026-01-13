@@ -26,7 +26,7 @@ MonoBehaviour:
   enableAntiParking: 1
   yawClamp: 145
   yawDecay: 1.5
-  pitchDecay: 2
+  pitchDecay: 6
   yawGainByPitch:
     serializedVersion: 2
     m_Curve:
@@ -51,12 +51,10 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  gripLocalPosOffset: {x: 0, y: 0, z: 0}
-  gripLocalEulerOffset: {x: 0, y: 0, z: 0}
   loftDeg: 30
   minLaunchDeg: 15
   maxLaunchDeg: 65
-  speedForFullPower: 30
+  speedForFullPower: 64
   powerCurve:
     serializedVersion: 2
     m_Curve:
@@ -70,6 +68,15 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
+      time: 0.57471746
+      value: 0.3008478
+      inSlope: 1.4261922
+      outSlope: 1.4261922
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
       time: 1
       value: 1
       inSlope: 0
@@ -81,9 +88,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  minImpulse: 0.2
-  maxImpulse: 0.3
-  fpForFullCurve: 180
-  curveAccel: 0
-  minCurveFlatSpeed: 0
-  curveMaxSeconds: 0
+  minImpulse: 0.1
+  maxImpulse: 128
+  curveMaxAbs: 0.35
+  curveEffectiveness: 0.85
+  launchBiasMaxAbsDeg: 30

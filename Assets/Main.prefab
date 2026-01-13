@@ -321,7 +321,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1052692653
+  GlobalObjectIdHash: 3120032765
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -418,6 +418,7 @@ MonoBehaviour:
   mineOnly: 1
   minImpulse: 0.1
   maxImpulse: 85
+  clubDb: {fileID: 11400000, guid: b91fb0ff4d155be418c801430b88c6d2, type: 2}
   EquippedClubId:
     m_InternalValue: -1
 --- !u!114 &2765047706870737222
@@ -496,7 +497,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GolferContextLink
   swing: {fileID: 4390947122104417625}
-  face: {fileID: 0}
   golfer: {fileID: 5703685012536466997}
   equippedClub: {fileID: 0}
   equippedData: {fileID: 0}

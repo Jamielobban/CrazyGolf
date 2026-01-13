@@ -92,6 +92,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &6586648056214758972
 MonoBehaviour:
@@ -106,11 +107,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClubContactLogger
   vel: {fileID: 6925361000748650394}
-  faceFrame: {fileID: 0}
   ballMask:
     serializedVersion: 2
     m_Bits: 64
-  minSpeedToLog: 0.1
+  minSpeedToHit: 1
   cooldown: 0.25
   speedForFullPower: 14
   powerCurve:
@@ -146,18 +146,14 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  curvePerDeg: 1
-  maxCurveDeg: 30
-  fpForFullCurve: 12
+  debugCurveStrength: 0.35
   minLaunchDeg: 1
   maxLaunchDeg: 65
-  drawRays: 1
-  raySeconds: 1
-  rayLength: 1
   link: {fileID: 0}
+  curveIntent01: 0
 --- !u!96 &2862693624745913426
 TrailRenderer:
-  serializedVersion: 3
+  serializedVersion: 4
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -203,6 +199,7 @@ TrailRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_Time: 1
   m_PreviewTimeScale: 1
   m_Parameters:
@@ -261,7 +258,6 @@ TrailRenderer:
     shadowBias: 0.5
     generateLightingData: 0
   m_MinVertexDistance: 0.1
-  m_MaskInteraction: 0
   m_Autodestruct: 0
   m_Emitting: 1
   m_ApplyActiveColorSpace: 1
@@ -298,6 +294,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f622b251a1d363e49839f1cd524de03e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClubHeadVelocity
+  smoothing: 0.5
 --- !u!1 &4200646916718582470
 GameObject:
   m_ObjectHideFlags: 0
@@ -307,7 +304,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1134995807886081091}
-  - component: {fileID: 2221231496837695147}
   - component: {fileID: 7156955577539880624}
   - component: {fileID: 4139867858499255774}
   m_Layer: 7
@@ -334,19 +330,6 @@ Transform:
   - {fileID: 7780233187662742373}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2221231496837695147
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4200646916718582470}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 99df4bd5cd1c902409e3b03580554867, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EquippedClubRefs
-  visualRoot: {fileID: 7780233187662742373}
 --- !u!114 &7156955577539880624
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -493,6 +476,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &8644590434339368430
 GameObject:

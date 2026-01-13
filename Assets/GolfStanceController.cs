@@ -114,6 +114,16 @@ public class GolfStanceController : NetworkBehaviour
             if (stance == Stance.Walk) EnterSwing();
             else ExitSwing();
         }
+
+        // Swing camera peek: Q/E changes TargetOffset.x
+        if (stance == Stance.Swing && rig != null)
+        {
+            float input01 = 0f;
+            if (Input.GetKey(KeyCode.Q)) input01 -= 1f;
+            if (Input.GetKey(KeyCode.E)) input01 += 1f;
+
+            rig.UpdateSwingPeek(input01, Time.deltaTime);
+        }
     }
 
     private void EnterSwing()
