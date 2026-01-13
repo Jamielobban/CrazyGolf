@@ -1,11 +1,10 @@
-// ClubBallContactLogger.cs
+using System.Data.Common;
 using UnityEngine;
 
 public class ClubBallContactLogger : MonoBehaviour
 {
     [Header("Refs")]
     [SerializeField] private ClubHeadVelocity vel;
-    [SerializeField] private Transform faceFrame;
 
     [Header("Ball")]
     [SerializeField] private LayerMask ballMask;
@@ -14,56 +13,68 @@ public class ClubBallContactLogger : MonoBehaviour
     [SerializeField] private float minSpeedToHit = 1.0f;
     [SerializeField] private float cooldown = 0.25f;
 
-    [Header("Power")]
-    [SerializeField] private float speedForFullPower = 14f;
-    [SerializeField] private AnimationCurve powerCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    [Header("Curve (legacy tuning kept but not used for intent)")]
-    [SerializeField] private float fpForFullCurve = 12f; // kept so you can revert easily
+    [Header("Intent Input (set-before-hit)")]
+    [Tooltip("Curve intent ramp speed (units/sec) while holding 4/5.")]
+    [SerializeField] private float curveRampSpeed = 1.5f;
 
-    [Header("TEMP Curve Intent (debug)")]
-    [SerializeField] private float debugCurveStrength = 0.35f; // hold 4/5 to apply this (scaled by speed)
+    [Tooltip("Launch bias ramp speed (deg/sec) while holding 6/7.")]
+    [SerializeField] private float launchBiasRampSpeedDeg = 18f;
 
-    [Header("Launch")]
-    [SerializeField] private float minLaunchDeg = 1f;
-    [SerializeField] private float maxLaunchDeg = 65f;
+    [Tooltip("Optional reset key 0 resets curve+launch bias.")]
+    [SerializeField] private bool enableResetKey = true;
 
-    private float nextAllowedTime;
+    [Header("Runtime Intent (debug)")]
+    [Range(-1f, 1f)] [SerializeField] private float curveIntent01 = 0f;
+    [SerializeField] private float launchBiasDeg = 0f;
 
     [SerializeField] private GolferContextLink link;
 
-    private GolfClub club;
-    private ClubData data;
-
-    // live intent (-debugCurveStrength..+debugCurveStrength)
-    public float curveIntent01;
+    private float nextAllowedTime;
 
     private void Awake()
     {
-        if (!faceFrame) faceFrame = transform;
         if (!vel) vel = GetComponentInParent<ClubHeadVelocity>();
-
-        club = GetComponentInParent<GolfClub>();
-        if (club) data = club.data;
-    }
-
-    // TEMP: hold 4 for left, 5 for right
-    private void Update()
-    {
-        curveIntent01 = 0f;
-
-        if (Input.GetKey(KeyCode.Alpha4))
-            curveIntent01 = -debugCurveStrength;
-
-        if (Input.GetKey(KeyCode.Alpha5))
-            curveIntent01 = debugCurveStrength;
     }
 
     public void BindContext(GolferContextLink context) => link = context;
 
+    private void Update()
+    {
+        if (link == null || link.golfer == null || !link.golfer.IsOwner)
+            return;
+
+        float dt = Time.deltaTime;
+        if (dt <= 0f) return;
+
+        // Curve intent: hold-to-ramp, value persists (set-before-hit)
+        if (Input.GetKey(KeyCode.Alpha4))
+            curveIntent01 -= curveRampSpeed * dt;
+        if (Input.GetKey(KeyCode.Alpha5))
+            curveIntent01 += curveRampSpeed * dt;
+
+        curveIntent01 = Mathf.Clamp(curveIntent01, -1f, 1f);
+
+        // Launch bias intent: hold-to-ramp degrees, persists (set-before-hit)
+        if (Input.GetKey(KeyCode.Alpha6))
+            launchBiasDeg -= launchBiasRampSpeedDeg * dt;
+        if (Input.GetKey(KeyCode.Alpha7))
+            launchBiasDeg += launchBiasRampSpeedDeg * dt;
+
+        // Clamp bias by club (if available)
+        var d = (link != null) ? link.Data : null;
+        float biasMax = (d != null) ? d.launchBiasMaxAbsDeg : 10f;
+        launchBiasDeg = Mathf.Clamp(launchBiasDeg, -biasMax, biasMax);
+
+        if (enableResetKey && Input.GetKeyDown(KeyCode.Alpha0))
+        {
+            curveIntent01 = 0f;
+            launchBiasDeg = 0f;
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        // Owner-only (prevents double hits)
         if (link == null || link.golfer == null || !link.golfer.IsOwner)
             return;
 
@@ -95,33 +106,17 @@ public class ClubBallContactLogger : MonoBehaviour
         // Attack angle (up/down) from velocity
         float attackDeg = Mathf.Atan2(v.y, flatSpeed) * Mathf.Rad2Deg;
 
-        // --- FACE (still computed, but NOT used for curve intent anymore; kept for future) ---
-        Vector3 faceN = faceFrame.TransformDirection(Vector3.left); // -X = face normal
-        Vector3 faceFlat = new Vector3(faceN.x, 0f, faceN.z);
-        float faceFlatMag = faceFlat.magnitude;
-        Vector3 faceDir = (faceFlatMag > 0.001f) ? (faceFlat / faceFlatMag) : pathDir;
+        // Use equipped club data if present
+        ClubData d = link.Data;
 
-        // (legacy values if you want to log them)
-        float pathYaw = Mathf.Atan2(pathDir.x, pathDir.z) * Mathf.Rad2Deg;
-        float faceYaw = Mathf.Atan2(faceDir.x, faceDir.z) * Mathf.Rad2Deg;
-        float faceMinusPath = Mathf.DeltaAngle(pathYaw, faceYaw);
+        float speedForFull = Mathf.Max(0.001f, d.speedForFullPower);
 
-        // --- CURVE FROM INTENT (scaled by speed) ---
-        float speed01ForCurve = Mathf.Clamp01(speed / Mathf.Max(0.001f, speedForFullPower));
-        float curve01 = curveIntent01 * speed01ForCurve;
+        float norm = Mathf.Clamp01(speed / speedForFull);
+        float power01 = Mathf.Clamp01(d.powerCurve.Evaluate(norm));
 
-        // Optional safety clamp while testing:
-        // curve01 = Mathf.Clamp(curve01, -0.6f, 0.6f);
-
-        // Loft
-        float loftDeg = data ? data.loftDeg : 0f;
-
-        // Power from speed curve
-        float norm = Mathf.Clamp01(speed / Mathf.Max(0.001f, speedForFullPower));
-        float power01 = Mathf.Clamp01(powerCurve.Evaluate(norm));
-
-        // Launch angle
-        float launchDeg = Mathf.Clamp(loftDeg + attackDeg, minLaunchDeg, maxLaunchDeg);
+        // --- LAUNCH (base + player bias, then clamp) ---
+        float baseLaunchDeg = d.loftDeg + attackDeg;
+        float launchDeg = Mathf.Clamp(baseLaunchDeg + launchBiasDeg, d.minLaunchDeg, d.maxLaunchDeg);
 
         // Build a launch direction that always goes upward-ish
         Vector3 rightAxis = Vector3.Cross(pathDir, Vector3.up);
@@ -130,12 +125,18 @@ public class ClubBallContactLogger : MonoBehaviour
 
         Vector3 launchDir = Quaternion.AngleAxis(launchDeg, rightAxis) * pathDir;
 
-        // If we accidentally aimed downward, flip the axis
         if (launchDir.y < 0.05f)
             launchDir = Quaternion.AngleAxis(launchDeg, -rightAxis) * pathDir;
 
         if (launchDir.y < 0.05f) launchDir.y = 0.05f;
         launchDir.Normalize();
+
+        // --- CURVE (intent * speed scaling * club effectiveness, capped per club) ---
+        float curveEff  = (d != null) ? d.curveEffectiveness : 1f;
+        float curveCap  = (d != null) ? d.curveMaxAbs : 0.5f;
+
+        float curve01 = curveIntent01 * norm * curveEff;
+        curve01 = Mathf.Clamp(curve01, -curveCap, curveCap);
 
         // Get ball NetworkObjectId
         var ballNO = other.GetComponentInParent<Unity.Netcode.NetworkObject>();
@@ -145,12 +146,9 @@ public class ClubBallContactLogger : MonoBehaviour
             return;
         }
 
-        // Request server hit (curve01 now comes from intent)
+        // Request server hit
         link.golfer.RequestBallHitFromClub(ballNO.NetworkObjectId, launchDir, power01, curve01);
 
         nextAllowedTime = Time.time + cooldown;
-
-        // Optional debug:
-        // Debug.Log($"[HIT] speed={speed:F1} power01={power01:F2} curveIntent={curveIntent01:F2} curve01={curve01:F2} f-p={faceMinusPath:F1}");
     }
 }

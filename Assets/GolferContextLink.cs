@@ -4,7 +4,6 @@ public class GolferContextLink : MonoBehaviour
 {
    [Header("Runtime references")]
     public SwingPivotMouseRotate swing;
-    public ClubFaceRollDriver face;
     public NetworkGolferPlayer golfer;
 
     [Header("Equipped (runtime)")]
@@ -25,16 +24,12 @@ public class GolferContextLink : MonoBehaviour
     {
         equippedClub = club;
         equippedData = club ? club.data : null;
-
-        //Debug.Log($"[GolferContextLink] EquippedClub={(equippedClub ? equippedClub.name : "NULL")} Data={(equippedData ? equippedData.clubName : "NULL")}");
     }
 
     public void SetEquippedData(ClubData data)
     {
         equippedClub = null;
         equippedData = data;
-
-        //Debug.Log($"[GolferContextLink] EquippedData={(equippedData ? equippedData.clubName : "NULL")}");
     }
 
     

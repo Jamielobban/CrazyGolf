@@ -1,8 +1,6 @@
 // NetworkGolferPlayer.cs
-// Owner requests hits, server validates and applies.
-// IMPORTANT CHANGE:
-// - Client does NOT send impulse.
-// - Client sends power01 (0..1). Server maps it to impulse using authoritative min/max.
+// Per-club authoritative impulse mapping on the server using EquippedClubId.
+// Keeps curve01 plumbing unchanged for now.
 
 using Unity.Netcode;
 using UnityEngine;
@@ -15,9 +13,11 @@ public class NetworkGolferPlayer : NetworkBehaviour
     [SerializeField] private LayerMask ballMask;
     [SerializeField] private bool mineOnly = true;
 
-    [Header("Impulse (authoritative on server)")]
+    [Header("Impulse (fallback if no club data)")]
     [SerializeField] private float minImpulse = 3f;
     [SerializeField] private float maxImpulse = 16f;
+
+    [SerializeField] private ClubDatabase clubDb;
 
     private readonly NetworkVariable<ulong> myBallNetworkId =
         new NetworkVariable<ulong>(
@@ -28,10 +28,6 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
     public NetworkGolfBall MyBall { get; private set; }
 
-    // Optional input fallback (button-hit), you can remove if you want
-    private PlayerInputActions input;
-    private bool hitPressed;
-
     public NetworkVariable<int> EquippedClubId =
         new(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -41,19 +37,12 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
         myBallNetworkId.OnValueChanged += OnMyBallIdChanged;
 
-        // ✅ Register context here
+        // Register context (your existing pattern)
         if (PlayerRegistry.Instance != null)
         {
             var ctx = GetComponent<GolferContextLink>();
             if (ctx != null)
                 PlayerRegistry.Instance.Register(ctx);
-        }
-
-        if (IsOwner)
-        {
-            input = new PlayerInputActions();
-            input.Enable();
-            input.Player.Hit.performed += _ => hitPressed = true;
         }
 
         if (myBallNetworkId.Value != 0)
@@ -62,7 +51,6 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        // ✅ Unregister context here
         if (PlayerRegistry.Instance != null)
         {
             var ctx = GetComponent<GolferContextLink>();
@@ -71,32 +59,10 @@ public class NetworkGolferPlayer : NetworkBehaviour
         }
 
         myBallNetworkId.OnValueChanged -= OnMyBallIdChanged;
-
-        if (IsOwner && input != null)
-            input.Disable();
-
         base.OnNetworkDespawn();
     }
 
-    private void Update()
-    {
-        if (!IsOwner) return;
-
-        // OPTIONAL fallback while you're prototyping
-        if (hitPressed)
-        {
-            hitPressed = false;
-
-            Vector3 aim = (Camera.main != null) ? Camera.main.transform.forward : transform.forward;
-            aim.y = 0f;
-            if (aim.sqrMagnitude < 0.0001f) return;
-
-            // Full power
-            //RequestHitClosestBallServerRpc(aim.normalized, 1f);
-        }
-    }
-
-    // Called by server (manager) to set this player's ball id
+    // Called by server to set this player's ball id
     public void SetMyBallIdServer(ulong ballId)
     {
         if (!IsServer) return;
@@ -119,16 +85,22 @@ public class NetworkGolferPlayer : NetworkBehaviour
     {
         if (!IsOwner) return;
         if (dir.sqrMagnitude < 0.0001f) return;
+
         dir.Normalize();
         power01 = Mathf.Clamp01(power01);
-        curve01 = Mathf.Clamp(curve01,-1f,1f);
+        curve01 = Mathf.Clamp(curve01, -1f, 1f);
 
-        RequestHitBallByIdServerRpc(ballNetId, dir.normalized, power01, curve01);
+        RequestHitBallByIdServerRpc(ballNetId, dir, power01, curve01);
     }
 
     // === Server: hit a specific ball by NetworkObjectId ===
     [ServerRpc]
-    private void RequestHitBallByIdServerRpc(ulong ballNetId, Vector3 dir, float power01, float curve01, ServerRpcParams rpcParams = default)
+    private void RequestHitBallByIdServerRpc(
+        ulong ballNetId,
+        Vector3 dir,
+        float power01,
+        float curve01,
+        ServerRpcParams rpcParams = default)
     {
         ulong senderId = rpcParams.Receive.SenderClientId;
 
@@ -151,12 +123,19 @@ public class NetworkGolferPlayer : NetworkBehaviour
         if (dir.sqrMagnitude < 0.0001f) return;
         dir.Normalize();
 
-        // Authoritative impulse mapping
-        float impulse = Mathf.Lerp(minImpulse, maxImpulse, power01);
+        power01 = Mathf.Clamp01(power01);
+        curve01 = Mathf.Clamp(curve01, -1f, 1f);
 
-        // Debug (optional)
-        //Debug.Log($"[HIT][Server] sender={senderId} ball={ballNetId} power01={power01:F2} impulse={impulse:F2} dir={dir}");
+        // === PER-CLUB authoritative impulse mapping ===
+        int clubId = EquippedClubId.Value;
+        ClubData cd = (clubDb != null) ? clubDb.Get(clubId) : null;
 
-        ball.HitServer(dir, impulse,curve01);
+        float minI = (cd != null) ? cd.minImpulse : minImpulse;
+        float maxI = (cd != null) ? cd.maxImpulse : maxImpulse;
+
+        float impulse = Mathf.Lerp(minI, maxI, Mathf.Clamp01(power01));
+
+        //Debug.Log(cd.name + " -> " + cd.maxImpulse);
+        ball.HitServer(dir, impulse, Mathf.Clamp(curve01, -1f, 1f));
     }
 }

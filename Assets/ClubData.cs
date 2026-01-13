@@ -27,10 +27,6 @@ public class ClubData : ScriptableObject
     public float pitchDecay = 2f;
     public AnimationCurve yawGainByPitch = AnimationCurve.EaseInOut(-80f, 0.5f, 80f, 1.4f);
 
-    [Header("Grip / Setup (optional)")]
-    public Vector3 gripLocalPosOffset;
-    public Vector3 gripLocalEulerOffset;
-
     [Header("Shot (shared inputs)")]
     public float loftDeg = 25f;
     public float minLaunchDeg = 1f;
@@ -44,9 +40,15 @@ public class ClubData : ScriptableObject
     public float minImpulse = 0.2f;
     public float maxImpulse = 20f;
 
-    [Header("Curve (server)")]
-    public float fpForFullCurve = 12f;
-    public float curveAccel = 18f;
-    public float minCurveFlatSpeed = 2.0f;
-    public float curveMaxSeconds = 1.2f;
+    
+    [Header("Curve Intent (client sends curve01)")]
+    [Tooltip("Hard cap on curve01 for this club. Putter=0, wedges small, driver bigger.")]
+    [Range(0f, 1f)] public float curveMaxAbs = 0.35f;
+
+    [Tooltip("How much this club responds to curve intent. (0=none, 1=full).")]
+    [Range(0f, 1f)] public float curveEffectiveness = 0.85f;
+
+    [Header("Launch Intent (client adds bias before clamping)")]
+    [Tooltip("Max degrees the player is allowed to bias launch up/down for this club.")]
+    [Range(0f, 30f)] public float launchBiasMaxAbsDeg = 10f;
 }
