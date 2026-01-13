@@ -26,6 +26,9 @@ public class GolfStanceController : NetworkBehaviour
     [Header("Debug")]
     [SerializeField] private bool debugToggleT = false;
 
+    [Header("Swing Lock/Orbit")]
+    [SerializeField] private SwingLockOrbitNet swingLockOrbit;
+
     private PlayerInputActions input;
     public Stance stance = Stance.Walk;
 
@@ -41,6 +44,8 @@ public class GolfStanceController : NetworkBehaviour
         }
 
         if (!movement) movement = GetComponent<NetworkRigidbodyPlayer>();
+        if (!swingLockOrbit) swingLockOrbit = GetComponent<SwingLockOrbitNet>();
+
         rig = movement ? movement.LocalRig : null;
 
         input = new PlayerInputActions();
@@ -49,7 +54,6 @@ public class GolfStanceController : NetworkBehaviour
         input.Player.Swing.performed += _ => EnterSwing();
         input.Player.Swing.canceled  += _ => ExitSwing();
 
-        // NEW: resolve NetworkHandRig by LogicalOwnerClientId
         waitHandRigCo = StartCoroutine(WaitForMyHandRig());
 
         ApplyWalk();
@@ -86,9 +90,7 @@ public class GolfStanceController : NetworkBehaviour
 
                 if (!grip)
                 {
-                    Debug.LogError(
-                        "[GolfStanceController] NetworkHandRig found, but GripInertiaFollower missing."
-                    );
+                    Debug.LogError("[GolfStanceController] NetworkHandRig found, but GripInertiaFollower missing.");
                     yield break;
                 }
 
@@ -126,6 +128,37 @@ public class GolfStanceController : NetworkBehaviour
         }
     }
 
+    private Vector3 GetSwingCenterWorld()
+    {
+        // Prefer the actual ball if resolved
+        var golfer = GetComponent<NetworkGolferPlayer>();
+        if (golfer != null && golfer.MyBall != null)
+            return golfer.MyBall.transform.position;
+
+        // fallback
+        if (hitPoint != null)
+            return hitPoint.position;
+
+        return transform.position + transform.forward * 1.2f;
+    }
+
+    private Vector3 GetSwingReferenceForward()
+    {
+        // Prefer camera forward so "behind ball" matches what you're looking at
+        var view = movement != null ? movement.ViewTransform : null;
+        if (view != null)
+        {
+            Vector3 f = view.forward;
+            f.y = 0f;
+            if (f.sqrMagnitude > 0.0001f) return f.normalized;
+        }
+
+        // fallback: player forward
+        Vector3 pf = transform.forward;
+        pf.y = 0f;
+        return (pf.sqrMagnitude > 0.0001f) ? pf.normalized : Vector3.forward;
+    }
+
     private void EnterSwing()
     {
         stance = Stance.Swing;
@@ -149,11 +182,22 @@ public class GolfStanceController : NetworkBehaviour
             rig.BindSwing(follow, hitPoint);
             rig.SetModeSwing(true);
         }
+
+        // === NEW: lock/orbit around ball center (snap) ===
+        if (swingLockOrbit != null)
+        {
+            Vector3 centerWorld = GetSwingCenterWorld();
+            Vector3 refForward = GetSwingReferenceForward();
+            swingLockOrbit.BeginSwingLock(centerWorld, refForward);
+        }
     }
 
     private void ExitSwing()
     {
         stance = Stance.Walk;
+
+        // stop lock/orbit
+        swingLockOrbit?.EndSwingLock();
 
         swingPivotDriver?.EndSwing();
 
