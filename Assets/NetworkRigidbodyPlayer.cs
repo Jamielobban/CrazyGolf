@@ -72,6 +72,7 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
             input.Player.Move.performed += ctx => moveInputOwner = ctx.ReadValue<Vector2>();
             input.Player.Move.canceled  += _   => moveInputOwner = Vector2.zero;
+            //input.Player.Jump.perofmed
 
             SpawnLocalCameraRigIfNeeded();
 

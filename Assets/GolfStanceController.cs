@@ -188,7 +188,7 @@ public class GolfStanceController : NetworkBehaviour
         {
             Vector3 centerWorld = GetSwingCenterWorld();
             Vector3 refForward = GetSwingReferenceForward();
-            swingLockOrbit.BeginSwingLock(centerWorld, refForward);
+            swingLockOrbit.BeginSwing(centerWorld, refForward);
         }
     }
 
@@ -197,7 +197,7 @@ public class GolfStanceController : NetworkBehaviour
         stance = Stance.Walk;
 
         // stop lock/orbit
-        swingLockOrbit?.EndSwingLock();
+        swingLockOrbit?.EndSwing();
 
         swingPivotDriver?.EndSwing();
 

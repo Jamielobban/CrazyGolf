@@ -112,45 +112,12 @@ MonoBehaviour:
     m_Bits: 64
   minSpeedToHit: 1
   cooldown: 0.25
-  speedForFullPower: 14
-  powerCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.6103363
-      value: 0.329683
-      inSlope: 1.315005
-      outSlope: 1.315005
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  debugCurveStrength: 0.35
-  minLaunchDeg: 1
-  maxLaunchDeg: 65
-  link: {fileID: 0}
+  curveRampSpeed: 1.5
+  launchBiasRampSpeedDeg: 18
+  enableResetKey: 1
   curveIntent01: 0
+  launchBiasDeg: 0
+  link: {fileID: 0}
 --- !u!96 &2862693624745913426
 TrailRenderer:
   serializedVersion: 4
@@ -355,6 +322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6eb26f30483eccc47a5042f2d3536216, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClubContextBinder
+  clubhead: {fileID: 687938105771028863}
 --- !u!1 &5046744013945983892
 GameObject:
   m_ObjectHideFlags: 0

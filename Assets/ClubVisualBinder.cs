@@ -14,6 +14,7 @@ public class ClubVisualBinder : NetworkBehaviour
     [SerializeField] private ClubEntry[] clubs;
     [SerializeField] private GolferContextLink link;
 
+
     private NetworkGolferPlayer player;
     private GameObject currentClub;
     private int currentId = -999;

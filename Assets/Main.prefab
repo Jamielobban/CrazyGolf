@@ -461,13 +461,14 @@ MonoBehaviour:
   movement: {fileID: 2765047706870737222}
   grip: {fileID: 0}
   swingPivotDriver: {fileID: 4390947122104417625}
-  swingLockOrbit: {fileID: 0}
   fpsFollow: {fileID: 6616834243419087862}
   swingFollow: {fileID: 7665911334274497047}
   walkLookPoint: {fileID: 0}
   hitPoint: {fileID: 3068920779213422748}
   walkToSwingBlend: 0.5
   swingToWalkBlend: 0.5
+  debugToggleT: 0
+  swingLockOrbit: {fileID: 0}
   stance: 0
 --- !u!114 &4390947122104417625
 MonoBehaviour:
@@ -501,6 +502,7 @@ MonoBehaviour:
   golfer: {fileID: 5703685012536466997}
   equippedClub: {fileID: 0}
   equippedData: {fileID: 0}
+  clubHead: {fileID: 0}
 --- !u!114 &5294826543001115773
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -531,16 +533,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SwingLockOrbitNet
   ShowTopMostFoldoutHeaderGroup: 1
-  lockRadius: 5
-  minOrbitRadius: 2.5
-  maxOrbitRadius: 2.5
+  ctx: {fileID: 0}
+  rb: {fileID: 0}
+  backOffset: 0
+  sideOffset: 0.3
+  maxSnapDistance: 3
   orbitSpeedDegPerSec: 90
   leftKey: 97
   rightKey: 100
+  faceBall: 0
+  tangentSign: -1
   lockedServer: 0
-  orbitRadiusServer: 0
-  orbitYawDegServer: 0
-  centerPosServer: {x: 0, y: 0, z: 0}
+  centerServer: {x: 5.808327, y: -6.64, z: 7.0505314}
+  clubTargetOffset0XZ_Server: {x: -0.15310478, y: 0, z: -0.25799036}
+  orbitYawDegServer: 3.5999985
 --- !u!1 &4339547246322372314
 GameObject:
   m_ObjectHideFlags: 0
@@ -568,7 +574,7 @@ Transform:
   m_GameObject: {fileID: 4339547246322372314}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.18, y: 0.98, z: 2.18}
+  m_LocalPosition: {x: -0.05, y: 0.98, z: 2.18}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -845,7 +851,7 @@ Transform:
   m_GameObject: {fileID: 9074168816960060713}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.885, z: 2.171}
+  m_LocalPosition: {x: -0.06999999, y: -0.885, z: 2.171}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 1
   m_Children: []

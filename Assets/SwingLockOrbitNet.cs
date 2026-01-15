@@ -4,70 +4,73 @@ using Unity.Netcode;
 [RequireComponent(typeof(Rigidbody))]
 public class SwingLockOrbitNet : NetworkBehaviour
 {
-    [Header("Lock rules (server)")]
-    [SerializeField] private float lockRadius = 2.0f;
+    [Header("References (on the same Player object)")]
+    [SerializeField] private GolferContextLink ctx;   // holds ClubHead
+    [SerializeField] private Rigidbody rb;            // player root rigidbody (this object)
 
-    [Header("Orbit controls (server)")]
-    [SerializeField] private float orbitSpeedDegPerSec = 90f;
-
-    [Header("Address placement (server snap)")]
-    [Tooltip("Meters behind the ball along -aim.")]
-    [SerializeField] private float backOffset = 1.15f;
-
-    [Tooltip("Meters to the RIGHT of the ball along +right. (negative = left)")]
+    [Header("Snap Offsets (meters) - FOR CLUBHEAD TARGET")]
+    [SerializeField] private float backOffset = 1.2f;
     [SerializeField] private float sideOffset = 0.35f;
 
-    [Tooltip("Extra lift above ground for the player's root (usually 0).")]
-    [SerializeField] private float upOffset = 0.0f;
+    [Header("Validation")]
+    [SerializeField] private float maxSnapDistance = 3.0f; // player root must be this close to center (XZ)
 
-    [Tooltip("Clamp how close/far we can end up from the center.")]
-    [SerializeField] private float minOrbitRadius = 0.9f;
-    [SerializeField] private float maxOrbitRadius = 1.8f;
-
-    [Header("Grounding (server)")]
-    [SerializeField] private LayerMask groundMask = ~0;
-    [SerializeField] private float groundRayUp = 1.0f;
-    [SerializeField] private float groundRayDown = 3.0f;
+    [Header("Orbit")]
+    [SerializeField] private float orbitSpeedDegPerSec = 90f;
 
     [Header("Input (client)")]
     [SerializeField] private KeyCode leftKey = KeyCode.A;
     [SerializeField] private KeyCode rightKey = KeyCode.D;
 
+    [Header("Facing")]
+    [Tooltip("If true, player faces the ball while orbiting. If false, faces 'tangent' (side-on).")]
+    [SerializeField] private bool faceBall = true;
+
+    [Tooltip("Only used when faceBall=false. +1 or -1 to flip which tangent direction the player faces.")]
+    [SerializeField] private int tangentSign = +1;
+
     [Header("Debug")]
     [SerializeField] private bool lockedServer;
-    [SerializeField] private float orbitRadiusServer;
+    [SerializeField] private Vector3 centerServer;
+    [SerializeField] private Vector3 clubTargetOffset0XZ_Server; // initial club target offset around center (XZ)
     [SerializeField] private float orbitYawDegServer;
-    [SerializeField] private Vector3 centerPosServer;
-    [SerializeField] private Vector3 addressPointServer;
 
-    private Rigidbody rb;
+    // clubhead solving
+    private Transform clubHeadServer;
+    private Vector3 clubHeadLocalFromRootServer; // clubhead position in PLAYER ROOT local space (captured at BeginSwing)
 
-    // owner-only
+    // client
     private bool lockedClient;
+
+    // server held input
+    private float orbitInputServer;
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        if (!rb) rb = GetComponent<Rigidbody>();
+        if (!ctx) ctx = GetComponent<GolferContextLink>();
     }
 
-    // OWNER: called by stance controller
-    public void BeginSwingLock(Vector3 centerWorldPos, Vector3 referenceForward)
+    // OWNER: call when swing begins
+    public void BeginSwing(Vector3 centerWorldPos, Vector3 playerForward)
     {
         if (!IsOwner) return;
 
-        referenceForward.y = 0f;
-        if (referenceForward.sqrMagnitude < 0.0001f) referenceForward = Vector3.forward;
-        referenceForward.Normalize();
+        playerForward.y = 0f;
+        if (playerForward.sqrMagnitude < 0.0001f) playerForward = Vector3.forward;
+        playerForward.Normalize();
 
-        BeginLockServerRpc(centerWorldPos, referenceForward);
+        BeginSwingServerRpc(centerWorldPos, playerForward);
         lockedClient = true;
     }
 
-    public void EndSwingLock()
+    // OWNER: call when swing ends
+    public void EndSwing()
     {
         if (!IsOwner) return;
+
         lockedClient = false;
-        EndLockServerRpc();
+        EndSwingServerRpc();
     }
 
     private void Update()
@@ -79,92 +82,84 @@ public class SwingLockOrbitNet : NetworkBehaviour
         if (Input.GetKey(leftKey)) input -= 1f;
         if (Input.GetKey(rightKey)) input += 1f;
 
-        if (Mathf.Abs(input) > 0.001f)
-            OrbitInputServerRpc(input);
+        OrbitInputServerRpc(Mathf.Clamp(input, -1f, 1f));
     }
 
     [ServerRpc]
-    private void BeginLockServerRpc(Vector3 centerWorldPos, Vector3 refForward, ServerRpcParams rpcParams = default)
+    private void BeginSwingServerRpc(Vector3 centerWorldPos, Vector3 playerForward, ServerRpcParams rpcParams = default)
     {
-        centerPosServer = centerWorldPos;
-
-        // Validate player is close enough to lock
+        // Validate player root is close enough (XZ)
         Vector3 p = rb.position;
-        Vector3 toPlayer = p - centerPosServer;
-        toPlayer.y = 0f;
-
-        if (toPlayer.magnitude > lockRadius)
+        Vector3 toCenter = centerWorldPos - p;
+        toCenter.y = 0f;
+        if (toCenter.magnitude > maxSnapDistance)
         {
             lockedServer = false;
             return;
         }
 
-        lockedServer = true;
+        centerServer = centerWorldPos;
 
-        // Flatten/sanitize aim
-        refForward.y = 0f;
-        if (refForward.sqrMagnitude < 0.0001f) refForward = Vector3.forward;
-        refForward.Normalize();
+        // Grab clubhead on SERVER (must exist on server instance)
+        if (!ctx) ctx = GetComponent<GolferContextLink>();
+        clubHeadServer = (ctx != null) ? ctx.ClubHead : null;
 
-        // Find ground point under/near the ball
-        Vector3 groundPoint = centerPosServer;
-        Vector3 groundNormal = Vector3.up;
-
-        Vector3 rayOrigin = centerPosServer + Vector3.up * groundRayUp;
-        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, groundRayUp + groundRayDown, groundMask, QueryTriggerInteraction.Ignore))
+        if (clubHeadServer == null)
         {
-            groundPoint = hit.point;
-            groundNormal = hit.normal;
+            Debug.LogError($"[{name}] SwingLockOrbit_ClubheadTarget_Net: ctx.ClubHead is NULL on server. " +
+                           $"Make sure SetEquippedClub runs on the server too (or club is present on the server).");
+            lockedServer = false;
+            return;
         }
 
-        // Build local basis from aim
-        Vector3 up = Vector3.up; // keep it simple; can use groundNormal if you want slopes later
-        Vector3 right = Vector3.Cross(up, refForward);
+        // Capture clubhead local offset from the player root
+        clubHeadLocalFromRootServer = transform.InverseTransformPoint(clubHeadServer.position);
+
+        // Sanitize forward
+        playerForward.y = 0f;
+        if (playerForward.sqrMagnitude < 0.0001f) playerForward = Vector3.forward;
+        playerForward.Normalize();
+
+        // Compute the SAME snap target for the CLUBHEAD that you like
+        Vector3 right = Vector3.Cross(Vector3.up, playerForward);
         if (right.sqrMagnitude < 0.0001f) right = Vector3.right;
         right.Normalize();
 
-        // Desired "address" point (where the player root should be relative to ball)
-        // +right = stand to the right, -forward = stand behind
-        addressPointServer =
-            groundPoint
-            + right * sideOffset
-            - refForward * backOffset
-            + up * upOffset;
+        Vector3 clubTargetPos0 =
+            centerServer
+            - playerForward * backOffset
+            + right * sideOffset;
 
-        // Derive orbit yaw/radius from center -> address point
-        Vector3 fromCenter = addressPointServer - centerPosServer;
-        fromCenter.y = 0f;
+        // Store initial orbit offset in XZ (around the ball)
+        Vector3 off = clubTargetPos0 - centerServer;
+        off.y = 0f;
 
-        float r = fromCenter.magnitude;
-        orbitRadiusServer = Mathf.Clamp(r, minOrbitRadius, maxOrbitRadius);
+        // safety: avoid zero offset
+        if (off.sqrMagnitude < 0.000001f)
+            off = new Vector3(0f, 0f, 0.001f);
 
-        if (fromCenter.sqrMagnitude < 0.0001f)
-            orbitYawDegServer = 0f;
-        else
-            orbitYawDegServer = Mathf.Atan2(fromCenter.x, fromCenter.z) * Mathf.Rad2Deg;
+        clubTargetOffset0XZ_Server = off;
 
-        ApplyOrbitPoseServer();
+        orbitYawDegServer = 0f;
+        orbitInputServer = 0f;
+
+        lockedServer = true;
+
+        ApplyPoseServer(); // yaw=0 => exact snap you wanted
     }
 
     [ServerRpc]
-    private void EndLockServerRpc(ServerRpcParams rpcParams = default)
+    private void EndSwingServerRpc(ServerRpcParams rpcParams = default)
     {
         lockedServer = false;
+        orbitInputServer = 0f;
     }
 
-    [ServerRpc]
+    [ServerRpc(Delivery = RpcDelivery.Unreliable)]
     private void OrbitInputServerRpc(float input01, ServerRpcParams rpcParams = default)
     {
         if (!lockedServer) return;
-
-        input01 = Mathf.Clamp(input01, -1f, 1f);
-
-        float dt = Time.deltaTime;
-        if (dt <= 0f) dt = 1f / 60f;
-
-        orbitYawDegServer += input01 * orbitSpeedDegPerSec * dt;
-
-        ApplyOrbitPoseServer();
+        orbitInputServer = Mathf.Clamp(input01, -1f, 1f);
     }
 
     private void FixedUpdate()
@@ -172,26 +167,52 @@ public class SwingLockOrbitNet : NetworkBehaviour
         if (!IsServer) return;
         if (!lockedServer) return;
 
-        ApplyOrbitPoseServer();
+        orbitYawDegServer += orbitInputServer * orbitSpeedDegPerSec * Time.fixedDeltaTime;
+
+        ApplyPoseServer();
     }
 
-    private void ApplyOrbitPoseServer()
+    private void ApplyPoseServer()
     {
-        Quaternion yawRot = Quaternion.Euler(0f, orbitYawDegServer, 0f);
-        Vector3 offset = yawRot * new Vector3(0f, 0f, orbitRadiusServer);
+        // 1) rotate the CLUBHEAD target offset around the center
+        Quaternion yaw = Quaternion.Euler(0f, orbitYawDegServer, 0f);
+        Vector3 clubOffset = yaw * clubTargetOffset0XZ_Server;
 
-        Vector3 desiredPos = centerPosServer + offset;
-        desiredPos.y = rb.position.y;
+        Vector3 clubTargetPos = centerServer + clubOffset;
 
-        Vector3 look = centerPosServer - desiredPos;
-        look.y = 0f;
+        // 2) decide player/root rotation
+        Quaternion rootRot;
 
-        Quaternion desiredRot =
-            (look.sqrMagnitude > 0.0001f)
+        if (faceBall)
+        {
+            // look at the ball from the club target position (stable)
+            Vector3 look = centerServer - clubTargetPos;
+            look.y = 0f;
+            rootRot = (look.sqrMagnitude > 0.0001f)
                 ? Quaternion.LookRotation(look.normalized, Vector3.up)
                 : rb.rotation;
+        }
+        else
+        {
+            // side-on: face tangent to the orbit circle
+            Vector3 tangent = Vector3.Cross(Vector3.up, clubOffset);
+            if (tangentSign < 0) tangent = -tangent;
+            tangent.y = 0f;
 
-        rb.MovePosition(desiredPos);
-        rb.MoveRotation(desiredRot);
+            rootRot = (tangent.sqrMagnitude > 0.0001f)
+                ? Quaternion.LookRotation(tangent.normalized, Vector3.up)
+                : rb.rotation;
+        }
+
+        // 3) solve root position so clubhead lands exactly on clubTargetPos
+        // clubWorldFromRoot = rootRot * clubHeadLocalFromRoot
+        Vector3 clubWorldFromRoot = rootRot * clubHeadLocalFromRootServer;
+        Vector3 rootPos = clubTargetPos - clubWorldFromRoot;
+
+        // keep existing height (matches your working snap behavior best)
+        rootPos.y = rb.position.y;
+
+        rb.MovePosition(rootPos);
+        rb.MoveRotation(rootRot);
     }
 }

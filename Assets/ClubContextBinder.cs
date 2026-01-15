@@ -6,6 +6,8 @@ public class ClubContextBinder : MonoBehaviour
     private ClubBallContactLogger[] loggers;
     private ClubHeadVelocity[] velocities;
 
+    public Transform clubhead;
+
     private void Awake()
     {
         loggers = GetComponentsInChildren<ClubBallContactLogger>(true);
