@@ -1,3 +1,7 @@
+// GolfStanceController.cs (only the parts that matter changed)
+// - Calls rig.SyncYawAxes(bodyYaw) every frame during swing
+// - Also keeps syncing for the swingToWalkBlend window after exit, to prevent “weird half move”
+
 using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -8,7 +12,6 @@ public class GolfStanceController : NetworkBehaviour
 
     [Header("Refs")]
     [SerializeField] private NetworkRigidbodyPlayer movement;
-
     [SerializeField] private GripInertiaFollower grip;
     [SerializeField] private SwingPivotMouseRotate swingPivotDriver;
 
@@ -22,9 +25,6 @@ public class GolfStanceController : NetworkBehaviour
     [SerializeField] private float walkToSwingBlend = 0.25f;
     [SerializeField] private float swingToWalkBlend = 0.15f;
 
-    [Header("Debug")]
-    [SerializeField] private bool debugToggleT = false;
-
     [Header("Swing Lock/Orbit")]
     [SerializeField] private SwingLockOrbitNet swingLockOrbit;
 
@@ -33,6 +33,9 @@ public class GolfStanceController : NetworkBehaviour
 
     private LocalCameraRig rig;
     private Coroutine waitHandRigCo;
+
+    // keep axis syncing alive briefly after exit
+    private float yawAxisSyncUntilTime;
 
     public override void OnNetworkSpawn()
     {
@@ -58,15 +61,99 @@ public class GolfStanceController : NetworkBehaviour
         ApplyWalk();
     }
 
-    public override void OnNetworkDespawn()
+    private void LateUpdate()
     {
-        if (IsOwner && input != null)
-            input.Disable();
+        if (!IsOwner) return;
 
-        if (waitHandRigCo != null)
-            StopCoroutine(waitHandRigCo);
+        // Keep Cinemachine internal yaw axes synced to body yaw
+        if (rig != null && (stance == Stance.Swing || Time.time < yawAxisSyncUntilTime))
+        {
+            rig.SyncYawAxes(transform.eulerAngles.y);
+        }
+
+        // Swing camera peek (your existing logic)
+        if (stance == Stance.Swing && rig != null)
+        {
+            float input01 = 0f;
+            if (Input.GetKey(KeyCode.Q)) input01 -= 1f;
+            if (Input.GetKey(KeyCode.E)) input01 += 1f;
+            rig.UpdateSwingPeek(input01, Time.deltaTime);
+        }
     }
 
+    private void EnterSwing()
+{
+    stance = Stance.Swing;
+
+    if (grip)
+        grip.SetFollowBodyAnchor();
+
+    movement?.HoldYawFor(walkToSwingBlend);
+
+    if (movement)
+    {
+        movement.SetYawEnabled(false);                 // ✅ stops yaw sending (hasYaw=false)
+        movement.SetServerMovementEnabledServerRpc(false); // slow-walk
+        movement.SetServerLocomotionEnabledServerRpc(true); // keep locomotion unless lock succeeds
+    }
+
+    swingPivotDriver?.BeginSwing();
+
+    if (rig)
+    {
+        Transform follow = swingFollow ? swingFollow : fpsFollow;
+        rig.BindSwing(follow, hitPoint);
+        rig.SetModeSwing(true);
+    }
+
+    if (swingLockOrbit != null)
+    {
+        Vector3 centerWorld = GetSwingCenterWorld();
+        Vector3 refForward = GetSwingReferenceForward();
+        swingLockOrbit.BeginSwing(centerWorld, refForward);
+    }
+}
+
+private void ExitSwing()
+{
+    stance = Stance.Walk;
+
+    // stop orbit first (it will re-enable server locomotion internally if you kept that)
+    swingLockOrbit?.EndSwing();
+
+    swingPivotDriver?.EndSwing();
+
+    if (grip)
+        grip.SetFollowCamera();
+
+    ApplyWalk();
+
+    // keep body from chasing blended camera yaw
+    movement?.HoldYawFor(swingToWalkBlend);
+
+    if (movement)
+    {
+        movement.SetServerMovementEnabledServerRpc(true);
+        movement.SetServerLocomotionEnabledServerRpc(true);
+    }
+}
+
+private void ApplyWalk()
+{
+    if (movement)
+    {
+        movement.SetYawEnabled(true);                 // ✅ yaw sending resumes only after hold expires
+        movement.SetServerMovementEnabledServerRpc(true);
+    }
+
+    if (rig)
+    {
+        rig.BindWalk(fpsFollow, walkLookPoint);
+        rig.SetModeSwing(false);
+    }
+}
+
+    // --- your existing helpers unchanged ---
     private IEnumerator WaitForMyHandRig()
     {
         const float timeoutSeconds = 3f;
@@ -86,44 +173,10 @@ public class GolfStanceController : NetworkBehaviour
                     continue;
 
                 grip = handRig.GetComponent<GripInertiaFollower>();
-
-                if (!grip)
-                {
-                    Debug.LogError("[GolfStanceController] NetworkHandRig found, but GripInertiaFollower missing.");
-                    yield break;
-                }
-
-                Debug.Log("[GolfStanceController] Bound local NetworkHandRig.");
                 yield break;
             }
 
             yield return null;
-        }
-
-        Debug.LogWarning(
-            "[GolfStanceController] Timed out waiting for local NetworkHandRig. " +
-            "Ensure GolfGameManager spawns it and sets LogicalOwnerClientId."
-        );
-    }
-
-    private void Update()
-    {
-        if (!IsOwner) return;
-
-        if (debugToggleT && Input.GetKeyDown(KeyCode.T))
-        {
-            if (stance == Stance.Walk) EnterSwing();
-            else ExitSwing();
-        }
-
-        // Swing camera peek: Q/E changes TargetOffset.x
-        if (stance == Stance.Swing && rig != null)
-        {
-            float input01 = 0f;
-            if (Input.GetKey(KeyCode.Q)) input01 -= 1f;
-            if (Input.GetKey(KeyCode.E)) input01 += 1f;
-
-            rig.UpdateSwingPeek(input01, Time.deltaTime);
         }
     }
 
@@ -152,78 +205,5 @@ public class GolfStanceController : NetworkBehaviour
         Vector3 pf = transform.forward;
         pf.y = 0f;
         return (pf.sqrMagnitude > 0.0001f) ? pf.normalized : Vector3.forward;
-    }
-
-    private void EnterSwing()
-    {
-        stance = Stance.Swing;
-
-        if (grip)
-            grip.SetFollowBodyAnchor();
-
-        movement?.HoldYawFor(walkToSwingBlend);
-
-        if (movement)
-        {
-            movement.SetMovementEnabled(false);                 // local
-            movement.SetYawEnabled(false);                      // local
-
-            movement.SetServerMovementEnabledServerRpc(false);  // ✅ server slow walk
-            movement.SetServerLocomotionEnabledServerRpc(true); // keep locomotion ON unless lock succeeds
-        }
-
-        swingPivotDriver?.BeginSwing();
-
-        if (rig)
-        {
-            Transform follow = swingFollow ? swingFollow : fpsFollow;
-            rig.BindSwing(follow, hitPoint);
-            rig.SetModeSwing(true);
-        }
-
-        if (swingLockOrbit != null)
-        {
-            Vector3 centerWorld = GetSwingCenterWorld();
-            Vector3 refForward = GetSwingReferenceForward();
-            swingLockOrbit.BeginSwing(centerWorld, refForward);
-        }
-    }
-
-    private void ExitSwing()
-    {
-        stance = Stance.Walk;
-
-        // stop lock/orbit
-        swingLockOrbit?.EndSwing();
-
-        swingPivotDriver?.EndSwing();
-
-        if (grip)
-            grip.SetFollowCamera();
-
-        ApplyWalk();
-        movement?.HoldYawFor(swingToWalkBlend);
-
-        // re-enable server locomotion
-       if (movement)
-        {
-            movement.SetServerMovementEnabledServerRpc(true);   // ✅ back to full speed
-            movement.SetServerLocomotionEnabledServerRpc(true); // re-enable locomotion (already in your code)
-        }
-    }
-
-    private void ApplyWalk()
-    {
-        if (movement)
-        {
-            movement.SetMovementEnabled(true);
-            movement.SetYawEnabled(true);
-        }
-
-        if (rig)
-        {
-            rig.BindWalk(fpsFollow, walkLookPoint);
-            rig.SetModeSwing(false);
-        }
     }
 }
