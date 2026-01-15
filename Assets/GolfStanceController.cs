@@ -9,7 +9,6 @@ public class GolfStanceController : NetworkBehaviour
     [Header("Refs")]
     [SerializeField] private NetworkRigidbodyPlayer movement;
 
-    // Comes from the NetworkHandRig (spawned by server)
     [SerializeField] private GripInertiaFollower grip;
     [SerializeField] private SwingPivotMouseRotate swingPivotDriver;
 
@@ -130,12 +129,10 @@ public class GolfStanceController : NetworkBehaviour
 
     private Vector3 GetSwingCenterWorld()
     {
-        // Prefer the actual ball if resolved
         var golfer = GetComponent<NetworkGolferPlayer>();
         if (golfer != null && golfer.MyBall != null)
             return golfer.MyBall.transform.position;
 
-        // fallback
         if (hitPoint != null)
             return hitPoint.position;
 
@@ -144,7 +141,6 @@ public class GolfStanceController : NetworkBehaviour
 
     private Vector3 GetSwingReferenceForward()
     {
-        // Prefer camera forward so "behind ball" matches what you're looking at
         var view = movement != null ? movement.ViewTransform : null;
         if (view != null)
         {
@@ -153,7 +149,6 @@ public class GolfStanceController : NetworkBehaviour
             if (f.sqrMagnitude > 0.0001f) return f.normalized;
         }
 
-        // fallback: player forward
         Vector3 pf = transform.forward;
         pf.y = 0f;
         return (pf.sqrMagnitude > 0.0001f) ? pf.normalized : Vector3.forward;
@@ -170,8 +165,11 @@ public class GolfStanceController : NetworkBehaviour
 
         if (movement)
         {
-            movement.SetMovementEnabled(false);
-            movement.SetYawEnabled(false);
+            movement.SetMovementEnabled(false);                 // local
+            movement.SetYawEnabled(false);                      // local
+
+            movement.SetServerMovementEnabledServerRpc(false);  // ✅ server slow walk
+            movement.SetServerLocomotionEnabledServerRpc(true); // keep locomotion ON unless lock succeeds
         }
 
         swingPivotDriver?.BeginSwing();
@@ -183,7 +181,6 @@ public class GolfStanceController : NetworkBehaviour
             rig.SetModeSwing(true);
         }
 
-        // === NEW: lock/orbit around ball center (snap) ===
         if (swingLockOrbit != null)
         {
             Vector3 centerWorld = GetSwingCenterWorld();
@@ -206,6 +203,13 @@ public class GolfStanceController : NetworkBehaviour
 
         ApplyWalk();
         movement?.HoldYawFor(swingToWalkBlend);
+
+        // re-enable server locomotion
+       if (movement)
+        {
+            movement.SetServerMovementEnabledServerRpc(true);   // ✅ back to full speed
+            movement.SetServerLocomotionEnabledServerRpc(true); // re-enable locomotion (already in your code)
+        }
     }
 
     private void ApplyWalk()

@@ -1,5 +1,8 @@
 using Unity.Netcode;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 public class SwingPivotMouseRotate : NetworkBehaviour
 {
@@ -55,7 +58,6 @@ public class SwingPivotMouseRotate : NetworkBehaviour
         isSwinging = true;
         if (!swingPivot) return;
 
-        // Must have club data
         ResolveAndApplyClubData();
 
         baseLocalRotation = swingPivot.localRotation;
@@ -78,13 +80,13 @@ public class SwingPivotMouseRotate : NetworkBehaviour
 
     private void ResolveAndApplyClubData()
     {
-        if (!link) link = GetComponent<GolferContextLink>();
+        if (!link) link = GetComponentInParent<GolferContextLink>();
 
         currentData = link ? link.Data : null;
 
         if (!currentData)
         {
-            Debug.LogError("[SwingPivotMouseRotate] No ClubData found. Make sure GolferContextLink.equippedClub is set and has data.");
+            Debug.LogError("[SwingPivotMouseRotate] No ClubData found. Make sure GolferContextLink has Data.");
             enabled = false;
             return;
         }
@@ -113,33 +115,50 @@ public class SwingPivotMouseRotate : NetworkBehaviour
 
     void Update()
     {
-         if (!IsOwner) return;
+        if (!IsOwner) return;
         if (!isSwinging || !swingPivot) return;
         if (!currentData) return;
 
         float dt = Time.deltaTime;
         if (dt <= 0f) return;
 
-        float mx = Input.GetAxisRaw("Mouse X");
-        float my = Input.GetAxisRaw("Mouse Y") * (invertY ? -1f : 1f);
+        // avoid giant spikes on hitch / alt-tab
+        dt = Mathf.Min(dt, 0.05f);
+
+        Vector2 m = ReadMouseDelta();
+        float mx = m.x;
+        float my = m.y * (invertY ? -1f : 1f);
 
         // ---- pitch ----
         pitchOffset += my * pitchSpeed;
         pitchOffset = Mathf.Clamp(pitchOffset, pitchMin, pitchMax);
 
+        // ---- yaw gain by pitch (safer) ----
+        float yawGain = 1f;
+        if (enableAntiParking && yawGainByPitch != null)
+        {
+            float pitch01 = Mathf.InverseLerp(pitchMin, pitchMax, pitchOffset); // 0..1 across full range
+            yawGain = yawGainByPitch.Evaluate(pitch01);
+        }
+
         // ---- yaw ----
-        float yawGain = enableAntiParking ? yawGainByPitch.Evaluate(pitchOffset) : 1f;
         yawOffset += mx * yawSpeed * yawGain;
+
+        // ---- clamp + decay only when not actively inputting ----
+        bool hasInput = Mathf.Abs(mx) > 0.0001f || Mathf.Abs(my) > 0.0001f;
 
         if (enableAntiParking)
         {
             yawOffset = Mathf.Clamp(yawOffset, -yawClamp, yawClamp);
 
-            float yawDecayT = 1f - Mathf.Exp(-yawDecay * dt);
-            float pitchDecayT = 1f - Mathf.Exp(-pitchDecay * dt);
+            if (!hasInput)
+            {
+                float yawDecayT = 1f - Mathf.Exp(-yawDecay * dt);
+                float pitchDecayT = 1f - Mathf.Exp(-pitchDecay * dt);
 
-            yawOffset = Mathf.Lerp(yawOffset, 0f, yawDecayT);
-            pitchOffset = Mathf.Lerp(pitchOffset, 0f, pitchDecayT);
+                yawOffset = Mathf.Lerp(yawOffset, 0f, yawDecayT);
+                pitchOffset = Mathf.Lerp(pitchOffset, 0f, pitchDecayT);
+            }
         }
 
         // ---- detect reversal and trigger catchup ----
@@ -166,5 +185,11 @@ public class SwingPivotMouseRotate : NetworkBehaviour
 
         float followT = 1f - Mathf.Exp(-follow * dt);
         swingPivot.localRotation = Quaternion.Slerp(swingPivot.localRotation, target, followT);
+    }
+
+    private static Vector2 ReadMouseDelta()
+    {
+        // fallback (old input manager)
+        return new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
     }
 }

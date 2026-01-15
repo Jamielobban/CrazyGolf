@@ -29,6 +29,13 @@ public class SwingLockOrbitNet : NetworkBehaviour
     [Tooltip("Only used when faceBall=false. +1 or -1 to flip which tangent direction the player faces.")]
     [SerializeField] private int tangentSign = +1;
 
+    [Header("Networking")]
+    [Tooltip("How often the owner sends orbit input while locked (Hz).")]
+    [SerializeField] private float orbitSendRateHz = 30f;
+
+    [Tooltip("If server hasn't received orbit input for this long, it decays to 0.")]
+    [SerializeField] private float orbitInputTimeout = 0.20f;
+
     [Header("Debug")]
     [SerializeField] private bool lockedServer;
     [SerializeField] private Vector3 centerServer;
@@ -44,6 +51,11 @@ public class SwingLockOrbitNet : NetworkBehaviour
 
     // server held input
     private float orbitInputServer;
+    private float lastOrbitInputRecvTimeServer;
+
+    // client send throttling
+    private float nextOrbitSendTime;
+    private float lastOrbitSent;
 
     private void Awake()
     {
@@ -60,8 +72,14 @@ public class SwingLockOrbitNet : NetworkBehaviour
         if (playerForward.sqrMagnitude < 0.0001f) playerForward = Vector3.forward;
         playerForward.Normalize();
 
+        // Do NOT assume lock is valid until server approves
+        lockedClient = false;
+
         BeginSwingServerRpc(centerWorldPos, playerForward);
-        lockedClient = true;
+
+        // reset client send state
+        lastOrbitSent = 999f;
+        nextOrbitSendTime = 0f;
     }
 
     // OWNER: call when swing ends
@@ -71,6 +89,11 @@ public class SwingLockOrbitNet : NetworkBehaviour
 
         lockedClient = false;
         EndSwingServerRpc();
+
+        // also ensure server locomotion is allowed again (slow-walk fallback etc.)
+        var move = GetComponent<NetworkRigidbodyPlayer>();
+        if (move != null)
+            move.SetServerLocomotionEnabledServerRpc(true);
     }
 
     private void Update()
@@ -81,13 +104,64 @@ public class SwingLockOrbitNet : NetworkBehaviour
         float input = 0f;
         if (Input.GetKey(leftKey)) input -= 1f;
         if (Input.GetKey(rightKey)) input += 1f;
+        input = Mathf.Clamp(input, -1f, 1f);
 
-        OrbitInputServerRpc(Mathf.Clamp(input, -1f, 1f));
+        float now = Time.time;
+        float sendInterval = (orbitSendRateHz <= 0f) ? 0.0333f : (1f / orbitSendRateHz);
+
+        bool changed = Mathf.Abs(input - lastOrbitSent) > 0.001f;
+        bool due = now >= nextOrbitSendTime;
+
+        if (changed || due)
+        {
+            OrbitInputServerRpc(input);
+            lastOrbitSent = input;
+            nextOrbitSendTime = now + sendInterval;
+        }
     }
 
-    [ServerRpc]
+    // -------------------------
+    // Lock success/fail -> owner
+    // -------------------------
+
+    private void ReplyLockResultToOwner(bool success)
+    {
+        var p = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new[] { OwnerClientId }
+            }
+        };
+
+        LockResultClientRpc(success, p);
+    }
+
+    [ClientRpc]
+    private void LockResultClientRpc(bool success, ClientRpcParams _ = default)
+    {
+        if (!IsOwner) return;
+
+        lockedClient = success;
+
+        // success => SwingLock drives RB on server, so disable server locomotion (prevents RB fighting)
+        // fail    => keep server locomotion enabled (slow-walk fallback)
+        var move = GetComponent<NetworkRigidbodyPlayer>();
+        if (move != null)
+            move.SetServerLocomotionEnabledServerRpc(!success);
+    }
+
+    // -------------------------
+    // Server RPCs
+    // -------------------------
+
+    [ServerRpc(RequireOwnership = true)]
     private void BeginSwingServerRpc(Vector3 centerWorldPos, Vector3 playerForward, ServerRpcParams rpcParams = default)
     {
+        // extra paranoia: ensure sender is the owner
+        if (rpcParams.Receive.SenderClientId != OwnerClientId)
+            return;
+
         // Validate player root is close enough (XZ)
         Vector3 p = rb.position;
         Vector3 toCenter = centerWorldPos - p;
@@ -95,6 +169,7 @@ public class SwingLockOrbitNet : NetworkBehaviour
         if (toCenter.magnitude > maxSnapDistance)
         {
             lockedServer = false;
+            ReplyLockResultToOwner(false);
             return;
         }
 
@@ -106,9 +181,10 @@ public class SwingLockOrbitNet : NetworkBehaviour
 
         if (clubHeadServer == null)
         {
-            Debug.LogError($"[{name}] SwingLockOrbit_ClubheadTarget_Net: ctx.ClubHead is NULL on server. " +
-                           $"Make sure SetEquippedClub runs on the server too (or club is present on the server).");
+            Debug.LogError($"[{name}] SwingLockOrbitNet: ctx.ClubHead is NULL on server. " +
+                           $"Make sure SetEquippedClub runs on the server too (or club exists on server).");
             lockedServer = false;
+            ReplyLockResultToOwner(false);
             return;
         }
 
@@ -120,7 +196,7 @@ public class SwingLockOrbitNet : NetworkBehaviour
         if (playerForward.sqrMagnitude < 0.0001f) playerForward = Vector3.forward;
         playerForward.Normalize();
 
-        // Compute the SAME snap target for the CLUBHEAD that you like
+        // Compute snap target for the CLUBHEAD
         Vector3 right = Vector3.Cross(Vector3.up, playerForward);
         if (right.sqrMagnitude < 0.0001f) right = Vector3.right;
         right.Normalize();
@@ -142,24 +218,37 @@ public class SwingLockOrbitNet : NetworkBehaviour
 
         orbitYawDegServer = 0f;
         orbitInputServer = 0f;
+        lastOrbitInputRecvTimeServer = Time.time;
 
         lockedServer = true;
 
         ApplyPoseServer(); // yaw=0 => exact snap you wanted
+        ReplyLockResultToOwner(true);
     }
 
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = true)]
     private void EndSwingServerRpc(ServerRpcParams rpcParams = default)
     {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId)
+            return;
+
         lockedServer = false;
         orbitInputServer = 0f;
+
+        // ensure owner stays in "slow-walk allowed" mode once swing ends
+        ReplyLockResultToOwner(false);
     }
 
-    [ServerRpc(Delivery = RpcDelivery.Unreliable)]
+    [ServerRpc(Delivery = RpcDelivery.Unreliable, RequireOwnership = true)]
     private void OrbitInputServerRpc(float input01, ServerRpcParams rpcParams = default)
     {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId)
+            return;
+
         if (!lockedServer) return;
+
         orbitInputServer = Mathf.Clamp(input01, -1f, 1f);
+        lastOrbitInputRecvTimeServer = Time.time;
     }
 
     private void FixedUpdate()
@@ -167,7 +256,15 @@ public class SwingLockOrbitNet : NetworkBehaviour
         if (!IsServer) return;
         if (!lockedServer) return;
 
+        // if input hasn't been received recently (unreliable), decay to 0 to avoid stuck orbit
+        if (Time.time - lastOrbitInputRecvTimeServer > orbitInputTimeout)
+            orbitInputServer = 0f;
+
         orbitYawDegServer += orbitInputServer * orbitSpeedDegPerSec * Time.fixedDeltaTime;
+
+        // prevent orbitYaw from growing forever
+        if (orbitYawDegServer > 100000f || orbitYawDegServer < -100000f)
+            orbitYawDegServer = Mathf.Repeat(orbitYawDegServer, 360f);
 
         ApplyPoseServer();
     }
@@ -180,39 +277,62 @@ public class SwingLockOrbitNet : NetworkBehaviour
 
         Vector3 clubTargetPos = centerServer + clubOffset;
 
-        // 2) decide player/root rotation
-        Quaternion rootRot;
+        // --- Solve in 2 passes (tiny improvement) ---
+        // Pass 1: compute rotation from "target geometry"
+        Quaternion rootRot1 = ComputeRootRot(clubTargetPos, clubOffset);
 
+        // Pass 1: compute root position from that rotation (KEEP SCALE MATH as-is)
+        Vector3 rootPos1 = SolveRootPosFromRot(clubTargetPos, rootRot1);
+
+        // Pass 2: if faceBall, recompute rotation from actual rootPos (more stable)
+        Quaternion rootRot2 = rootRot1;
         if (faceBall)
         {
-            // look at the ball from the club target position (stable)
+            Vector3 look = centerServer - rootPos1;
+            look.y = 0f;
+            if (look.sqrMagnitude > 0.0001f)
+                rootRot2 = Quaternion.LookRotation(look.normalized, Vector3.up);
+        }
+
+        // Pass 2: solve position again with improved rotation
+        Vector3 rootPos2 = SolveRootPosFromRot(clubTargetPos, rootRot2);
+
+        // keep existing height (matches your working snap behavior best)
+        rootPos2.y = rb.position.y;
+
+        rb.MovePosition(rootPos2);
+        rb.MoveRotation(rootRot2);
+    }
+
+    private Quaternion ComputeRootRot(Vector3 clubTargetPos, Vector3 clubOffset)
+    {
+        if (faceBall)
+        {
             Vector3 look = centerServer - clubTargetPos;
             look.y = 0f;
-            rootRot = (look.sqrMagnitude > 0.0001f)
+            return (look.sqrMagnitude > 0.0001f)
                 ? Quaternion.LookRotation(look.normalized, Vector3.up)
                 : rb.rotation;
         }
         else
         {
-            // side-on: face tangent to the orbit circle
             Vector3 tangent = Vector3.Cross(Vector3.up, clubOffset);
             if (tangentSign < 0) tangent = -tangent;
             tangent.y = 0f;
 
-            rootRot = (tangent.sqrMagnitude > 0.0001f)
+            return (tangent.sqrMagnitude > 0.0001f)
                 ? Quaternion.LookRotation(tangent.normalized, Vector3.up)
                 : rb.rotation;
         }
+    }
 
-        // 3) solve root position so clubhead lands exactly on clubTargetPos
-        // clubWorldFromRoot = rootRot * clubHeadLocalFromRoot
-       Matrix4x4 m = Matrix4x4.TRS(Vector3.zero, rootRot, transform.lossyScale); 
-       Vector3 clubWorldFromRoot = m.MultiplyVector(clubHeadLocalFromRootServer); 
-       Vector3 rootPos = clubTargetPos - clubWorldFromRoot;
-        // keep existing height (matches your working snap behavior best)
-        rootPos.y = rb.position.y;
+    private Vector3 SolveRootPosFromRot(Vector3 clubTargetPos, Quaternion rootRot)
+    {
+        // KEEP YOUR SCALE MATH (requested)
+        Matrix4x4 m = Matrix4x4.TRS(Vector3.zero, rootRot, transform.lossyScale);
+        Vector3 clubWorldFromRoot = m.MultiplyVector(clubHeadLocalFromRootServer);
 
-        rb.MovePosition(rootPos);
-        rb.MoveRotation(rootRot);
+        Vector3 rootPos = clubTargetPos - clubWorldFromRoot;
+        return rootPos;
     }
 }

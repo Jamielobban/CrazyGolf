@@ -1,10 +1,3 @@
-// NetworkRigidbodyPlayer.cs
-// - Owner reads local input, sends move + yaw to server.
-// - Server applies rb.MoveRotation and velocity.
-//
-// Still includes the "HoldYawFor(blendTime)" fix so body doesn't chase blended yaw.
-// Priority switching means PanTilt shouldn't reset anymore.
-
 using Unity.Netcode;
 using UnityEngine;
 
@@ -16,6 +9,16 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     public float swingMaxSpeed = 1f;
     public float accel = 20f;
     public float yawLerp = 20f;
+
+    [Header("Networking")]
+    [Tooltip("How often to send input to server (Hz).")]
+    [SerializeField] private float sendRateHz = 30f;
+
+    [Tooltip("Deadzone for resending move input.")]
+    [SerializeField] private float moveDeadzone = 0.01f;
+
+    [Tooltip("Degrees threshold before resending yaw.")]
+    [SerializeField] private float yawDeadzoneDeg = 0.25f;
 
     [Header("Camera Targets (on player prefab)")]
     public Transform cameraRoot;
@@ -46,6 +49,9 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     private bool movementEnabled = true;
     private bool yawEnabled = true;
 
+    // SERVER gate: when false, this script does NOT drive the RB (SwingLockOrbit will)
+    private bool serverLocomotionEnabled = true;
+
     // Keep last yaw we sent so server stays stable while yaw is disabled or held
     private float lastYawSent;
 
@@ -55,9 +61,16 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     // Blend yaw hold
     private float yawHoldUntilTime;
 
+    // Send throttling
+    private float nextSendTime;
+    private Vector2 lastMoveSent;
+    private float lastYawSentToServer;
+
     public NetworkVariable<Quaternion> NetAimRotation =
         new(Quaternion.identity, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+
+    private bool serverMovementEnabled = true;
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -72,7 +85,6 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
             input.Player.Move.performed += ctx => moveInputOwner = ctx.ReadValue<Vector2>();
             input.Player.Move.canceled  += _   => moveInputOwner = Vector2.zero;
-            //input.Player.Jump.perofmed
 
             SpawnLocalCameraRigIfNeeded();
 
@@ -84,12 +96,18 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
             lastYawSent = transform.eulerAngles.y;
             cachedYawFromView = lastYawSent;
+
+            lastMoveSent = Vector2.zero;
+            lastYawSentToServer = lastYawSent;
+            nextSendTime = 0f;
         }
 
         if (IsServer)
         {
             yawServer = transform.eulerAngles.y;
             yawServerSmooth = yawServer;
+
+            serverLocomotionEnabled = true;
         }
     }
 
@@ -116,15 +134,13 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
         }
 
         localRig = Instantiate(cameraRigPrefab);
-
-        // Priority default: walk
         localRig.SetModeSwing(false);
     }
 
-    // Called by GolfStanceController
+    // Called by GolfStanceController (local-only)
     public void SetMovementEnabled(bool enabled) => movementEnabled = enabled;
 
-    // Called by GolfStanceController
+    // Called by GolfStanceController (local-only)
     public void SetYawEnabled(bool enabled) => yawEnabled = enabled;
 
     // Called by GolfStanceController when switching cameras
@@ -133,23 +149,38 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
         yawHoldUntilTime = Mathf.Max(yawHoldUntilTime, Time.time + seconds);
     }
 
+    // Called by stance controller to stop server locomotion during swing lock
+    [ServerRpc(RequireOwnership = true)]
+    public void SetServerLocomotionEnabledServerRpc(bool enabled, ServerRpcParams rpcParams = default)
+    {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId)
+            return;
+
+        serverLocomotionEnabled = enabled;
+
+        if (!enabled)
+        {
+            // zero velocity so we don't keep sliding while swing lock drives pose
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+    }
+
     private void LateUpdate()
     {
         if (!IsOwner) return;
 
-        // Cinemachine applies camera motion in LateUpdate, so sample yaw here
         var view = ViewTransform;
-       if (view != null)
+        if (view != null)
         {
             cachedYawFromView = view.eulerAngles.y;
 
             Vector3 e = view.eulerAngles;
             float pitch = e.x;
             if (pitch > 180f) pitch -= 360f;
-            pitch = Mathf.Clamp(pitch, -75f, 75f); // match your pitchClamp if you want
+            pitch = Mathf.Clamp(pitch, -75f, 75f);
 
             float yaw = e.y;
-
             NetAimRotation.Value = Quaternion.Euler(pitch, yaw, 0f);
         }
     }
@@ -162,7 +193,6 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
         if (yawEnabled)
         {
-            // During blend window: DO NOT follow blended camera yaw
             if (Time.time < yawHoldUntilTime)
             {
                 yawToSend = lastYawSent;
@@ -174,25 +204,38 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
             }
         }
 
-        SendMoveInputServerRpc(moveInputOwner);
-        SendYawServerRpc(yawToSend);
+        // Rate limit + deadzone resend
+        float sendInterval = (sendRateHz <= 0f) ? 0.0333f : (1f / sendRateHz);
+        float now = Time.time;
+
+        bool moveChanged = (moveInputOwner - lastMoveSent).sqrMagnitude > (moveDeadzone * moveDeadzone);
+        bool yawChanged = Mathf.Abs(Mathf.DeltaAngle(lastYawSentToServer, yawToSend)) > yawDeadzoneDeg;
+        bool due = now >= nextSendTime;
+
+        if (moveChanged || yawChanged || due)
+        {
+            SendInputServerRpc(moveInputOwner, yawToSend);
+
+            lastMoveSent = moveInputOwner;
+            lastYawSentToServer = yawToSend;
+            nextSendTime = now + sendInterval;
+        }
     }
 
-    [ServerRpc]
-    private void SendMoveInputServerRpc(Vector2 inputValue)
+    [ServerRpc(Delivery = RpcDelivery.Unreliable, RequireOwnership = true)]
+    private void SendInputServerRpc(Vector2 inputValue, float yaw, ServerRpcParams rpcParams = default)
     {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId)
+            return;
+
         moveInputServer = inputValue;
-    }
-
-    [ServerRpc]
-    private void SendYawServerRpc(float yaw)
-    {
         yawServer = Mathf.Repeat(yaw, 360f);
     }
 
     private void FixedUpdate()
     {
         if (!IsServer) return;
+        if (!serverLocomotionEnabled) return;
 
         // Smooth yaw
         yawServerSmooth = Mathf.LerpAngle(
@@ -216,7 +259,7 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
         Vector3 v = rb.linearVelocity;
         Vector3 flatV = new Vector3(v.x, 0f, v.z);
 
-        float speed = movementEnabled ? maxSpeed : swingMaxSpeed;
+        float speed = serverMovementEnabled ? maxSpeed : swingMaxSpeed;
         Vector3 targetFlatV = desiredDir * speed;
         Vector3 deltaV = targetFlatV - flatV;
 
@@ -225,5 +268,14 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
         Vector3 newFlatV = flatV + deltaV;
         rb.linearVelocity = new Vector3(newFlatV.x, v.y, newFlatV.z);
+    }
+
+    [ServerRpc(RequireOwnership = true)]
+    public void SetServerMovementEnabledServerRpc(bool enabled, ServerRpcParams rpcParams = default)
+    {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId)
+            return;
+
+        serverMovementEnabled = enabled;
     }
 }
