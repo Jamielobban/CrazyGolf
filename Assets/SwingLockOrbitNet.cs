@@ -206,9 +206,9 @@ public class SwingLockOrbitNet : NetworkBehaviour
 
         // 3) solve root position so clubhead lands exactly on clubTargetPos
         // clubWorldFromRoot = rootRot * clubHeadLocalFromRoot
-        Vector3 clubWorldFromRoot = rootRot * clubHeadLocalFromRootServer;
-        Vector3 rootPos = clubTargetPos - clubWorldFromRoot;
-
+       Matrix4x4 m = Matrix4x4.TRS(Vector3.zero, rootRot, transform.lossyScale); 
+       Vector3 clubWorldFromRoot = m.MultiplyVector(clubHeadLocalFromRootServer); 
+       Vector3 rootPos = clubTargetPos - clubWorldFromRoot;
         // keep existing height (matches your working snap behavior best)
         rootPos.y = rb.position.y;
 
