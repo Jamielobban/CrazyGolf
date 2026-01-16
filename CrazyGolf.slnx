@@ -9,6 +9,7 @@
   <Project Path="Unity.Services.Core.Internal.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsMonitor.Configuration.csproj" />
   <Project Path="Unity.ShaderGraph.Editor.csproj" />
+  <Project Path="Unity.ProBuilder.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.csproj" />
   <Project Path="Unity.Mathematics.csproj" />
   <Project Path="Unity.Timeline.Editor.csproj" />
@@ -18,6 +19,7 @@
   <Project Path="UnityEngine.UI.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsMonitor.Editor.csproj" />
   <Project Path="Unity.Collections.csproj" />
+  <Project Path="Unity.ProBuilder.Poly2Tri.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.2D.Runtime.csproj" />
   <Project Path="Unity.VisualScripting.Core.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Editor.csproj" />
@@ -28,6 +30,7 @@
   <Project Path="Unity.Services.Core.Environments.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkProfiler.Editor.csproj" />
   <Project Path="Unity.VisualScripting.Flow.Editor.csproj" />
+  <Project Path="Unity.ProBuilder.Csg.csproj" />
   <Project Path="Unity.Netcode.Runtime.csproj" />
   <Project Path="Unity.VisualStudio.Editor.csproj" />
   <Project Path="Unity.Services.Authentication.csproj" />
@@ -37,6 +40,7 @@
   <Project Path="Unity.Services.QoS.csproj" />
   <Project Path="Unity.Services.Authentication.Editor.csproj" />
   <Project Path="Unity.Searcher.Editor.csproj" />
+  <Project Path="Unity.ProBuilder.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.MetricTypes.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Adapters.csproj" />
   <Project Path="Unity.Services.Wire.Internal.csproj" />
@@ -85,6 +89,8 @@
   <Project Path="Unity.Multiplayer.Tools.Adapters.Ngo1WithUtp2.csproj" />
   <Project Path="Unity.Multiplayer.Center.Common.csproj" />
   <Project Path="Unity.Multiplayer.Tools.DependencyInjection.UIElements.csproj" />
+  <Project Path="Unity.ProBuilder.KdTree.csproj" />
+  <Project Path="Unity.ProBuilder.AddOns.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkSimulator.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkProfiler.Runtime.csproj" />
   <Project Path="Unity.Services.Core.Environments.Internal.csproj" />
@@ -99,9 +105,10 @@
   <Project Path="Unity.Multiplayer.Tools.NetVis.Configuration.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkSolutionInterface.csproj" />
   <Project Path="Unity.Services.Core.Threading.csproj" />
+  <Project Path="Unity.ProBuilder.AssetIdRemapUtility.csproj" />
   <Project Path="Unity.Settings.Editor.csproj" />
-  <Project Path="Unity.InputSystem.TestFramework.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
+  <Project Path="Unity.InputSystem.TestFramework.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStats.CodeGen.csproj" />
   <Project Path="Unity.Multiplayer.Tools.DependencyInjection.csproj" />
@@ -112,6 +119,7 @@
   <Project Path="Unity.Services.Core.Device.csproj" />
   <Project Path="Unity.Services.Core.Analytics.csproj" />
   <Project Path="Unity.Multiplayer.Tools.MetricEvents.csproj" />
+  <Project Path="Unity.ProBuilder.Examples.Editor.csproj" />
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
   <Project Path="Unity.Services.Authentication.Editor.Shared.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
@@ -123,12 +131,14 @@
   <Project Path="Unity.RenderPipelines.Core.Runtime.Shared.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Adapters.Ngo1.csproj" />
+  <Project Path="Unity.ProBuilder.Stl.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsReporting.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Editor.Shared.csproj" />
   <Project Path="Unity.Services.Core.Networking.csproj" />
   <Project Path="Unity.VisualScripting.DocCodeExamples.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Adapters.Utp2.csproj" />
   <Project Path="Unity.PlasticSCM.Editor.Entities.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Unity.Rendering.LightTransport.Editor.csproj" />
   <Project Path="Unity.Services.Core.Environments.csproj" />
   <Project Path="Unity.Collections.Editor.csproj" />

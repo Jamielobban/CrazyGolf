@@ -54,7 +54,7 @@ MonoBehaviour:
   loftDeg: 30
   minLaunchDeg: 15
   maxLaunchDeg: 65
-  speedForFullPower: 64
+  speedForFullPower: 12
   powerCurve:
     serializedVersion: 2
     m_Curve:
@@ -68,8 +68,8 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 0.57471746
-      value: 0.3008478
+      time: 0.7319135
+      value: 0.31018618
       inSlope: 1.4261922
       outSlope: 1.4261922
       tangentMode: 0
@@ -89,7 +89,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   minImpulse: 0.1
-  maxImpulse: 128
+  maxImpulse: 24
   curveMaxAbs: 0.35
   curveEffectiveness: 0.85
   launchBiasMaxAbsDeg: 30

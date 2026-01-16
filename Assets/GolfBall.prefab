@@ -205,6 +205,33 @@ MonoBehaviour:
   groundCheckRadius: 0.06
   groundCheckDistance: 0.25
   groundCheckUpOffset: 0.03
+  useLaunchRamp: 1
+  launchRampDuration: 0.15
+  launchRampCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.2
+      inSlope: 0.95822644
+      outSlope: 0.95822644
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.06437126
+    - serializedVersion: 3
+      time: 1
+      value: 1.0018692
+      inSlope: 2.6161137
+      outSlope: 2.6161137
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.0314371
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  launchCurveSamples: 32
   groundedNow: 0
   groundedFrames: 0
 --- !u!96 &721266747545144125
