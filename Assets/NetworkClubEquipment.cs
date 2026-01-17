@@ -48,4 +48,36 @@ public class NetworkClubEquipment : NetworkBehaviour
 
         equippedClubId.Value = clubId;
     }
-}
+
+        public void TryPickupWorldClub(WorldClub club)
+    {
+        if (!IsOwner || club == null) return;
+
+        var no = club.GetComponent<NetworkObject>();
+        if (!no || !no.IsSpawned) return;
+
+        RequestPickupWorldClubServerRpc(no.NetworkObjectId);
+    }
+
+    [ServerRpc(RequireOwnership = true)]
+    private void RequestPickupWorldClubServerRpc(ulong clubNetObjectId, ServerRpcParams rpcParams = default)
+    {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
+
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(clubNetObjectId, out var clubNO) || clubNO == null)
+            return;
+
+        var worldClub = clubNO.GetComponent<WorldClub>();
+        if (worldClub == null) return;
+
+        // Optional: distance validation (recommended)
+        float dist = Vector3.Distance(transform.position, clubNO.transform.position);
+        if (dist > 3.0f) return;
+
+        // Equip by ID (visual binder will update everywhere)
+        equippedClubId.Value = worldClub.ClubId;
+
+        // Remove world object (so it can't be picked by others)
+        clubNO.Despawn(true);
+    }
+    }

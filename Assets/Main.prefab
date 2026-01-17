@@ -179,6 +179,7 @@ GameObject:
   - component: {fileID: 1432556614112789841}
   - component: {fileID: 589703905635826597}
   - component: {fileID: 3940408468961494881}
+  - component: {fileID: 9050580307216339934}
   m_Layer: 9
   m_Name: Main
   m_TagString: Untagged
@@ -578,6 +579,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DebugEquipKeys
   ShowTopMostFoldoutHeaderGroup: 1
   equip: {fileID: 0}
+--- !u!114 &9050580307216339934
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2617925885463999829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ce6a27dda0f8664eb5e95287fd8c8c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ClubInteractor
+  ShowTopMostFoldoutHeaderGroup: 1
+  cam: {fileID: 0}
+  interactDist: 3
+  clubMask:
+    serializedVersion: 2
+    m_Bits: 128
+  equipment: {fileID: 589703905635826597}
 --- !u!1 &4339547246322372314
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,6 +1,7 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class ClubInteractor : MonoBehaviour
+public class ClubInteractor : NetworkBehaviour
 {
     [SerializeField] private Camera cam;
     [SerializeField] private float interactDist = 3.0f;
@@ -8,47 +9,54 @@ public class ClubInteractor : MonoBehaviour
 
     [SerializeField] private NetworkClubEquipment equipment;
 
-    ClubPickup lookedAt;
+    private WorldClub lookedAt;
 
-    public int clubId;
-
-    void Awake()
+    private void Awake()
     {
         if (!equipment) equipment = GetComponent<NetworkClubEquipment>();
     }
 
-    void Update()
+    private void Update()
     {
+        if (!IsOwner) return;
+
         lookedAt = null;
 
-        if (!cam) {
+        if (!cam)
+        {
             cam = Camera.main;
             if (!cam) return;
         }
+
+        bool hitClub = Physics.Raycast(
+            cam.transform.position,
+            cam.transform.forward,
+            out var hit,
+            interactDist,
+            clubMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        if (hitClub)
+            lookedAt = hit.collider.GetComponentInParent<WorldClub>();
+
         Debug.DrawRay(
             cam.transform.position,
             cam.transform.forward * interactDist,
             lookedAt ? Color.green : Color.red
         );
 
-        if (Physics.Raycast(cam.transform.position, cam.transform.forward, out var hit, interactDist, clubMask,
-                QueryTriggerInteraction.Ignore))
-        {
-            lookedAt = hit.collider.GetComponent<ClubPickup>();
-        }
-
         if (lookedAt != null)
         {
-            // replace with UI later
-            Debug.Log($"[LOOK] {lookedAt.name} (press E)");
+            Debug.Log($"[LOOK] {lookedAt.name} clubId={lookedAt.ClubId} (press E)");
 
-            //if (Input.GetKeyDown(KeyCode.E))
-               // equipment.DebugEquip(lookedAt.clubId);
+            if (Input.GetKeyDown(KeyCode.E))
+                equipment.TryPickupWorldClub(lookedAt);
         }
         else
         {
             if (Input.GetKeyDown(KeyCode.E))
-                Debug.Log($"[PRESSED E]");
+                Debug.Log("[PRESSED E] (no club)");
         }
     }
 }
