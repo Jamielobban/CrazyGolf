@@ -274,7 +274,7 @@ GameObject:
   - component: {fileID: 7156955577539880624}
   - component: {fileID: 4139867858499255774}
   m_Layer: 7
-  m_Name: GolfClub
+  m_Name: Iron
   m_TagString: GolfClub
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

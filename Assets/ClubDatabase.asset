@@ -15,3 +15,5 @@ MonoBehaviour:
   entries:
   - id: 0
     data: {fileID: 11400000, guid: 0a4dc836f1def19419d9cd90834ecced, type: 2}
+  - id: 1
+    data: {fileID: 11400000, guid: fa6713ff6a82da947b12bdf7d3cdb0ea, type: 2}

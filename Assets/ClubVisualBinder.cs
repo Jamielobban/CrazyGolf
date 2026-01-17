@@ -15,39 +15,58 @@ public class ClubVisualBinder : NetworkBehaviour
     [SerializeField] private GolferContextLink link;
 
 
-    private NetworkGolferPlayer player;
+    private NetworkClubEquipment player;
     private GameObject currentClub;
     private int currentId = -999;
 
     private Coroutine attachRoutine;
 
+    private void Update()
+    {
+        //Debug.Log("Update from: ->" + this);
+
+        if (Input.GetKeyDown(KeyCode.Alpha9))
+        {
+            if (player.equippedClubNetId.Value == currentId)
+            {
+                Debug.Log(player.equippedClubNetId.Value == currentId);
+                player.OnEquippedChanged(0, 1);
+                player.equippedClubNetId.Value = clubs[currentId].id;
+            }
+            else
+            {
+                Debug.Log("No more clubs left in the bag");
+            }
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
         if (!link) link = GetComponent<GolferContextLink>();
 
-        player = GetComponent<NetworkGolferPlayer>();
+        player = GetComponent<NetworkClubEquipment>();
         if (!player)
         {
             Debug.LogError("[ClubVisualBinder] Missing NetworkGolferPlayer on player object.");
             return;
         }
 
-        player.EquippedClubId.OnValueChanged += OnClubChanged;
+        player.equippedClubNetId.OnValueChanged += OnClubChanged;
 
         // apply initial state (important for late join / already-set values)
-        OnClubChanged(-999, player.EquippedClubId.Value);
+        OnClubChanged(-999, player.equippedClubNetId.Value);
     }
 
     public override void OnNetworkDespawn()
     {
         if (player != null)
-            player.EquippedClubId.OnValueChanged -= OnClubChanged;
+            player.equippedClubNetId.OnValueChanged -= OnClubChanged;
 
         if (currentClub)
             Destroy(currentClub);
     }
 
-    private void OnClubChanged(int oldId, int newId)
+    public void OnClubChanged(int oldId, int newId)
     {
         if (currentId == newId) return;
         currentId = newId;

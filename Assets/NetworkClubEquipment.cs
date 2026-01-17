@@ -5,14 +5,14 @@ public class NetworkClubEquipment : NetworkBehaviour
 {
     [Header("Refs")]
     [SerializeField] private GolferContextLink link;   // on player root (stable)
-    [SerializeField] private Transform gripPivot;      // your detached laggy hand pivot (owner-only use)
+    [SerializeField] private ClubVisualBinder binder;
 
     [Header("Pickup validation")]
     [SerializeField] private float pickupRange = 3.0f;
 
     // Networked equipped club object id (0 = none)
-    private readonly NetworkVariable<ulong> equippedClubNetId =
-        new NetworkVariable<ulong>(
+    public readonly NetworkVariable<int> equippedClubNetId =
+        new NetworkVariable<int>(
             0,
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server
@@ -44,15 +44,15 @@ public class NetworkClubEquipment : NetworkBehaviour
         var no = pickup.GetComponent<NetworkObject>();
         if (!no) return;
 
-        RequestPickupServerRpc(no.NetworkObjectId);
+        RequestPickupServerRpc((int)no.NetworkObjectId);
     }
 
     [ServerRpc]
-    private void RequestPickupServerRpc(ulong clubNetId, ServerRpcParams rpcParams = default)
+    private void RequestPickupServerRpc(int clubNetId, ServerRpcParams rpcParams = default)
     {
         ulong sender = rpcParams.Receive.SenderClientId;
 
-        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(clubNetId, out var clubNO) || !clubNO)
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue((ulong)clubNetId, out var clubNO) || !clubNO)
             return;
 
         // distance validation
@@ -69,12 +69,12 @@ public class NetworkClubEquipment : NetworkBehaviour
         equippedClubNetId.Value = clubNetId;
     }
 
-    private void OnEquippedChanged(ulong oldId, ulong newId)
+    public void OnEquippedChanged(int oldId, int newId)
     {
         ResolveEquipped(newId);
     }
 
-   private void ResolveEquipped(ulong id)
+   private void ResolveEquipped(int id)
     {
         if (id == 0)
         {
@@ -82,16 +82,13 @@ public class NetworkClubEquipment : NetworkBehaviour
             return;
         }
 
-        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(id, out var no))
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue((ulong)id, out var no))
             return;
 
         var gc = no.GetComponent<GolfClub>();
         if (link) link.equippedClub = gc;
 
-        // OWNER-ONLY visual parenting
-        if (IsOwner)
-        {
-            no.transform.SetParent(gripPivot, true);
-        }
+        binder = GetComponent<ClubVisualBinder>();
+        binder.OnClubChanged(0, 1);
     }
 }

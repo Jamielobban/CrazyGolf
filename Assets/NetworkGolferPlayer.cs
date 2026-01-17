@@ -19,6 +19,8 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
     [SerializeField] private ClubDatabase clubDb;
 
+    [SerializeField] private NetworkClubEquipment equipment;
+
     private readonly NetworkVariable<ulong> myBallNetworkId =
         new NetworkVariable<ulong>(
             0,
@@ -28,8 +30,8 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
     public NetworkGolfBall MyBall { get; private set; }
 
-    public NetworkVariable<int> EquippedClubId =
-        new(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    //public NetworkVariable<int> EquippedClubId =
+        //new(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public override void OnNetworkSpawn()
     {
@@ -127,8 +129,8 @@ public class NetworkGolferPlayer : NetworkBehaviour
         curve01 = Mathf.Clamp(curve01, -1f, 1f);
 
         // === PER-CLUB authoritative impulse mapping ===
-        int clubId = EquippedClubId.Value;
-        ClubData cd = (clubDb != null) ? clubDb.Get(clubId) : null;
+        int clubId = equipment.equippedClubNetId.Value;
+        ClubData cd = (clubDb != null) ? clubDb.Get((int)clubId) : null;
 
         float minI = (cd != null) ? cd.minImpulse : minImpulse;
         float maxI = (cd != null) ? cd.maxImpulse : maxImpulse;

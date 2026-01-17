@@ -177,6 +177,7 @@ GameObject:
   - component: {fileID: 4182380670424442734}
   - component: {fileID: 5294826543001115773}
   - component: {fileID: 1432556614112789841}
+  - component: {fileID: 589703905635826597}
   m_Layer: 9
   m_Name: Main
   m_TagString: Untagged
@@ -322,7 +323,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1052692653
+  GlobalObjectIdHash: 3120032765
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -420,8 +421,7 @@ MonoBehaviour:
   minImpulse: 0.1
   maxImpulse: 85
   clubDb: {fileID: 11400000, guid: b91fb0ff4d155be418c801430b88c6d2, type: 2}
-  EquippedClubId:
-    m_InternalValue: -1
+  equipment: {fileID: 589703905635826597}
 --- !u!114 &2765047706870737222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -439,7 +439,9 @@ MonoBehaviour:
   swingMaxSpeed: 0.5
   accel: 75
   yawLerp: 20
-  cameraRoot: {fileID: 0}
+  sendRateHz: 30
+  moveDeadzone: 0.01
+  yawDeadzoneDeg: 0.25
   visualsToHideOwner:
   - {fileID: 7167281672544040281}
   cameraRigPrefab: {fileID: 5422043875463464133, guid: 79c70c47184dad449a5402fb9575b52d, type: 3}
@@ -467,7 +469,6 @@ MonoBehaviour:
   hitPoint: {fileID: 3068920779213422748}
   walkToSwingBlend: 0.5
   swingToWalkBlend: 0.5
-  debugToggleT: 0
   swingLockOrbit: {fileID: 0}
   stance: 0
 --- !u!114 &4390947122104417625
@@ -519,7 +520,9 @@ MonoBehaviour:
   clubs:
   - id: 0
     visualPrefab: {fileID: 4200646916718582470, guid: 95ae20b0fdc933c43b02ca0bb31fd25a, type: 3}
-  link: {fileID: 0}
+  - id: 1
+    visualPrefab: {fileID: 4200646916718582470, guid: d597e65745cc26d459937cec7dfd6314, type: 3}
+  link: {fileID: 4182380670424442734}
 --- !u!114 &1432556614112789841
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -533,20 +536,34 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SwingLockOrbitNet
   ShowTopMostFoldoutHeaderGroup: 1
-  ctx: {fileID: 0}
-  rb: {fileID: 0}
+  ctx: {fileID: 4182380670424442734}
+  rb: {fileID: 1554030751805840726}
   backOffset: 0
   sideOffset: 0.12
   maxSnapDistance: 3
   orbitSpeedDegPerSec: 90
-  leftKey: 97
-  rightKey: 100
   faceBall: 0
   tangentSign: -1
-  lockedServer: 0
-  centerServer: {x: 5.808327, y: -6.64, z: 7.0505314}
-  clubTargetOffset0XZ_Server: {x: -0.15310478, y: 0, z: -0.25799036}
-  orbitYawDegServer: 3.5999985
+  leftKey: 97
+  rightKey: 100
+  orbitSendRateHz: 30
+  orbitInputTimeout: 0.2
+--- !u!114 &589703905635826597
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2617925885463999829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37eabb38854ddde4e9b5c73bf62f8f83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkClubEquipment
+  ShowTopMostFoldoutHeaderGroup: 1
+  link: {fileID: 4182380670424442734}
+  binder: {fileID: 5294826543001115773}
+  pickupRange: 3
 --- !u!1 &4339547246322372314
 GameObject:
   m_ObjectHideFlags: 0
