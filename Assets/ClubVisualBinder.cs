@@ -8,59 +8,40 @@ public class ClubVisualBinder : NetworkBehaviour
     public struct ClubEntry
     {
         public int id;
-        public GameObject visualPrefab; // NON-networked visual prefab
+        public GameObject visualPrefab;
     }
 
     [SerializeField] private ClubEntry[] clubs;
     [SerializeField] private GolferContextLink link;
 
-
-    private NetworkClubEquipment player;
+    private NetworkClubEquipment equipment;
     private GameObject currentClub;
     private int currentId = -999;
 
     private Coroutine attachRoutine;
 
-    private void Update()
-    {
-        //Debug.Log("Update from: ->" + this);
-
-        if (Input.GetKeyDown(KeyCode.Alpha9))
-        {
-            if (player.equippedClubNetId.Value == currentId)
-            {
-                Debug.Log(player.equippedClubNetId.Value == currentId);
-                player.OnEquippedChanged(0, 1);
-                player.equippedClubNetId.Value = clubs[currentId].id;
-            }
-            else
-            {
-                Debug.Log("No more clubs left in the bag");
-            }
-        }
-    }
-
     public override void OnNetworkSpawn()
     {
         if (!link) link = GetComponent<GolferContextLink>();
 
-        player = GetComponent<NetworkClubEquipment>();
-        if (!player)
+        equipment = GetComponent<NetworkClubEquipment>();
+        if (!equipment)
         {
-            Debug.LogError("[ClubVisualBinder] Missing NetworkGolferPlayer on player object.");
+            Debug.LogError("[ClubVisualBinder] Missing NetworkClubEquipment.");
             return;
         }
 
-        player.equippedClubNetId.OnValueChanged += OnClubChanged;
+        // Listen to the SAME NV (server-written)
+        equipment.equippedClubId.OnValueChanged += OnClubChanged;
 
-        // apply initial state (important for late join / already-set values)
-        OnClubChanged(-999, player.equippedClubNetId.Value);
+        // apply initial
+        OnClubChanged(-999, equipment.equippedClubId.Value);
     }
 
     public override void OnNetworkDespawn()
     {
-        if (player != null)
-            player.equippedClubNetId.OnValueChanged -= OnClubChanged;
+        if (equipment != null)
+            equipment.equippedClubId.OnValueChanged -= OnClubChanged;
 
         if (currentClub)
             Destroy(currentClub);
@@ -71,7 +52,12 @@ public class ClubVisualBinder : NetworkBehaviour
         if (currentId == newId) return;
         currentId = newId;
 
-        // clear previous visual + data ref
+        if (attachRoutine != null)
+        {
+            StopCoroutine(attachRoutine);
+            attachRoutine = null;
+        }
+
         if (currentClub)
         {
             Destroy(currentClub);
@@ -80,7 +66,7 @@ public class ClubVisualBinder : NetworkBehaviour
 
         if (link) link.SetEquippedClub(null);
 
-        if (newId < 0) return;
+        if (newId <= 0) return; // 0 = none
 
         var prefab = GetVisualPrefab(newId);
         if (!prefab)
@@ -90,17 +76,12 @@ public class ClubVisualBinder : NetworkBehaviour
         }
 
         currentClub = Instantiate(prefab);
-        
-        var binder = currentClub.GetComponent<ClubContextBinder>();
-        if (binder) binder.Bind(link);
+
+        var ctxBinder = currentClub.GetComponent<ClubContextBinder>();
+        if (ctxBinder) ctxBinder.Bind(link);
         else Debug.LogWarning("[ClubVisualBinder] Club prefab missing ClubContextBinder.");
 
-        if (attachRoutine != null)
-        {
-            StopCoroutine(attachRoutine);
-            attachRoutine = null;
-        }
-        attachRoutine = StartCoroutine(AttachWhenRigReady(currentClub));
+        attachRoutine = StartCoroutine(AttachWhenRigReady(currentClub, equipment.OwnerClientId));
     }
 
     private GameObject GetVisualPrefab(int id)
@@ -110,26 +91,23 @@ public class ClubVisualBinder : NetworkBehaviour
         return null;
     }
 
-    private IEnumerator AttachWhenRigReady(GameObject clubInstance)
+    private IEnumerator AttachWhenRigReady(GameObject clubInstance, ulong playerOwnerClientId)
     {
-        // Safety: club might be destroyed before rig exists
         if (!clubInstance) yield break;
 
         Transform gripPivot = null;
 
         while (gripPivot == null)
         {
-            // If club changed while waiting, abort
             if (!clubInstance || clubInstance != currentClub)
                 yield break;
 
-            gripPivot = FindGripPivotForPlayer(OwnerClientId);
+            gripPivot = FindGripPivotForPlayer(playerOwnerClientId);
             yield return null;
         }
 
         AttachToPivot(clubInstance.transform, gripPivot);
 
-        // Set equipped data ONCE
         var gc = clubInstance.GetComponent<GolfClub>();
         if (gc && link)
             link.SetEquippedClub(gc);
@@ -151,7 +129,7 @@ public class ClubVisualBinder : NetworkBehaviour
                 continue;
 
             var follower = rig.GetComponent<GripInertiaFollower>();
-            return follower ? follower.transform : null; // replace with explicit pivot later
+            return follower ? follower.transform : null;
         }
 
         return null;

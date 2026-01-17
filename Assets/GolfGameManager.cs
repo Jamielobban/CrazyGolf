@@ -45,7 +45,7 @@ public class GolfGameManager : MonoBehaviour
                 if (client.PlayerObject)
                 {
                     var player = client.PlayerObject.GetComponent<NetworkClubEquipment>();
-                    if (player) player.equippedClubNetId.Value = 0;
+                    if (player) player.equippedClubId.Value = 0;
                 }
             }
         }
@@ -71,8 +71,7 @@ public class GolfGameManager : MonoBehaviour
         if (nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject)
         {
             var player = client.PlayerObject.GetComponent<NetworkClubEquipment>();
-            if (player)
-                player.equippedClubNetId.Value = 0;
+            if (player) player.equippedClubId.Value = 0;
         }
     }
 

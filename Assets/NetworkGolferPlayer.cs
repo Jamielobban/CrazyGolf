@@ -129,7 +129,7 @@ public class NetworkGolferPlayer : NetworkBehaviour
         curve01 = Mathf.Clamp(curve01, -1f, 1f);
 
         // === PER-CLUB authoritative impulse mapping ===
-        int clubId = equipment.equippedClubNetId.Value;
+        int clubId = equipment.equippedClubId.Value;
         ClubData cd = (clubDb != null) ? clubDb.Get((int)clubId) : null;
 
         float minI = (cd != null) ? cd.minImpulse : minImpulse;

@@ -10,6 +10,8 @@ public class ClubInteractor : MonoBehaviour
 
     ClubPickup lookedAt;
 
+    public int clubId;
+
     void Awake()
     {
         if (!equipment) equipment = GetComponent<NetworkClubEquipment>();
@@ -40,8 +42,8 @@ public class ClubInteractor : MonoBehaviour
             // replace with UI later
             Debug.Log($"[LOOK] {lookedAt.name} (press E)");
 
-            if (Input.GetKeyDown(KeyCode.E))
-                equipment.TryPickup(lookedAt);
+            //if (Input.GetKeyDown(KeyCode.E))
+               // equipment.DebugEquip(lookedAt.clubId);
         }
         else
         {

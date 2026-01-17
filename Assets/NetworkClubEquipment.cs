@@ -4,91 +4,48 @@ using UnityEngine;
 public class NetworkClubEquipment : NetworkBehaviour
 {
     [Header("Refs")]
-    [SerializeField] private GolferContextLink link;   // on player root (stable)
+    [SerializeField] private GolferContextLink link;
     [SerializeField] private ClubVisualBinder binder;
 
-    [Header("Pickup validation")]
-    [SerializeField] private float pickupRange = 3.0f;
-
-    // Networked equipped club object id (0 = none)
-    public readonly NetworkVariable<int> equippedClubNetId =
-        new NetworkVariable<int>(
-            0,
-            NetworkVariableReadPermission.Everyone,
-            NetworkVariableWritePermission.Server
-        );
-
-    private NetworkObject equippedClubNO;
+    // For now, treat this as a CLUB ID (not NetworkObjectId)
+    public readonly NetworkVariable<int> equippedClubId =
+        new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public override void OnNetworkSpawn()
     {
         if (!link) link = GetComponent<GolferContextLink>();
+        if (!binder) binder = GetComponent<ClubVisualBinder>();
 
-        equippedClubNetId.OnValueChanged += OnEquippedChanged;
+        equippedClubId.OnValueChanged += OnEquippedChanged;
 
-        // resolve if already set
-        if (equippedClubNetId.Value != 0)
-            ResolveEquipped(equippedClubNetId.Value);
+        // apply initial
+        OnEquippedChanged(-999, equippedClubId.Value);
     }
 
     public override void OnNetworkDespawn()
     {
-        equippedClubNetId.OnValueChanged -= OnEquippedChanged;
+        equippedClubId.OnValueChanged -= OnEquippedChanged;
     }
 
-    // Called by local interactor (owner)
-    public void TryPickup(ClubPickup pickup)
+    private void OnEquippedChanged(int oldId, int newId)
     {
-        if (!IsOwner || !pickup) return;
-
-        var no = pickup.GetComponent<NetworkObject>();
-        if (!no) return;
-
-        RequestPickupServerRpc((int)no.NetworkObjectId);
+        // equipment does NOT set visuals directly; binder listens too, but this is fine if you want single path:
+        if (!binder) binder = GetComponent<ClubVisualBinder>();
+        if (binder) binder.OnClubChanged(oldId, newId);
     }
 
-    [ServerRpc]
-    private void RequestPickupServerRpc(int clubNetId, ServerRpcParams rpcParams = default)
+    // OWNER calls this (for debug / testing)
+    public void DebugEquip(int clubId)
     {
-        ulong sender = rpcParams.Receive.SenderClientId;
-
-        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue((ulong)clubNetId, out var clubNO) || !clubNO)
-            return;
-
-        // distance validation
-        var playerNO = NetworkManager.ConnectedClients[sender].PlayerObject;
-        if (!playerNO) return;
-
-        float dist = Vector3.Distance(playerNO.transform.position, clubNO.transform.position);
-        if (dist > pickupRange) return;
-
-        // (optional) deny if someone else owns it, or transfer:
-        clubNO.ChangeOwnership(sender);
-
-        // Set equipped id
-        equippedClubNetId.Value = clubNetId;
+        if (!IsOwner) return;
+        DebugEquipServerRpc(clubId);
     }
 
-    public void OnEquippedChanged(int oldId, int newId)
+    [ServerRpc(RequireOwnership = true)]
+    private void DebugEquipServerRpc(int clubId, ServerRpcParams rpcParams = default)
     {
-        ResolveEquipped(newId);
-    }
+        if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
 
-   private void ResolveEquipped(int id)
-    {
-        if (id == 0)
-        {
-            if (link) link.equippedClub = null;
-            return;
-        }
-
-        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue((ulong)id, out var no))
-            return;
-
-        var gc = no.GetComponent<GolfClub>();
-        if (link) link.equippedClub = gc;
-
-        binder = GetComponent<ClubVisualBinder>();
-        binder.OnClubChanged(0, 1);
+        equippedClubId.Value = clubId;
     }
 }
