@@ -84,13 +84,6 @@ public class SwingPivotMouseRotate : NetworkBehaviour
 
         currentData = link ? link.Data : null;
 
-        if (!currentData)
-        {
-            Debug.LogError("[SwingPivotMouseRotate] No ClubData found. Make sure GolferContextLink has Data.");
-            enabled = false;
-            return;
-        }
-
         var d = currentData;
 
         yawSpeed = d.yawSpeed;

@@ -1,31 +1,114 @@
 using Unity.Netcode;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class NetworkGolfBag : NetworkBehaviour
 {
+    [Header("Ownership")]
+    [SerializeField] private bool ownerOnlyAccess = true;
+
+    [Header("Capacity")]
+    [SerializeField] private int maxClubs = 14;
+
+    [Header("Database")]
+    [SerializeField] private ClubDatabase clubDb;
+
     public NetworkVariable<ulong> LogicalOwnerClientId =
         new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    public NetworkList<int> ClubIds { get; private set; }
+    // Authoritative
+    public NetworkList<int> Clubs { get; private set; }
+
+    // Inspector-only
+    [Header("Debug (Inspector Only)")]
+    [SerializeField] private List<string> debugClubNames = new();
 
     private void Awake()
     {
-        ClubIds = new NetworkList<int>();
+        Clubs = new NetworkList<int>();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        Clubs.OnListChanged += _ => SyncDebugList();
+        SyncDebugList();
     }
 
     public override void OnNetworkDespawn()
     {
-        ClubIds?.Dispose();
+        Clubs.OnListChanged -= _ => SyncDebugList();
     }
 
-    public bool AddClubServer(int clubId, int capacity = 14)
+    private void SyncDebugList()
     {
-        if (!IsServer) return false;
-        if (clubId <= 0) return false;
-        if (ClubIds.Count >= capacity) return false;
+        if (debugClubNames == null)
+            debugClubNames = new List<string>();
 
-        ClubIds.Add(clubId);
-        //Debug.Log()
-        return true;
+        debugClubNames.Clear();
+
+        foreach (var id in Clubs)
+        {
+            if (clubDb == null)
+            {
+                debugClubNames.Add($"id {id} (no db)");
+                continue;
+            }
+
+            var cd = clubDb.Get(id);
+            debugClubNames.Add(cd != null ? cd.clubName : $"<unknown id {id}>");
+        }
+    }
+
+    private bool CanAccess(ulong clientId)
+    {
+        return !ownerOnlyAccess || clientId == LogicalOwnerClientId.Value;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void DepositEquippedToBagServerRpc(ulong playerNetId, ServerRpcParams rpcParams = default)
+    {
+        ulong sender = rpcParams.Receive.SenderClientId;
+        if (!CanAccess(sender)) return;
+        if (Clubs.Count >= maxClubs) return;
+
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(playerNetId, out var playerNO))
+            return;
+
+        // Must be sender's player (prevents depositing someone else’s equipment)
+        if (playerNO.OwnerClientId != sender) return;
+
+        var equip = playerNO.GetComponent<NetworkClubEquipment>();
+        if (!equip) return;
+
+        int clubId = equip.equippedClubId.Value;
+        if (clubId <= 0) return;
+
+        Clubs.Add(clubId);
+        equip.equippedClubId.Value = 0;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void EquipFromBagServerRpc(ulong playerNetId, int index, ServerRpcParams rpcParams = default)
+    {
+        ulong sender = rpcParams.Receive.SenderClientId;
+        if (!CanAccess(sender)) return;
+        if (index < 0 || index >= Clubs.Count) return;
+
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(playerNetId, out var playerNO))
+            return;
+
+        // Must be sender's player
+        if (playerNO.OwnerClientId != sender) return;
+
+        var equip = playerNO.GetComponent<NetworkClubEquipment>();
+        if (!equip) return;
+
+        if (equip.equippedClubId.Value != 0) return;
+
+        int clubId = Clubs[index];
+        if (clubId <= 0) return;
+
+        Clubs.RemoveAt(index);
+        equip.equippedClubId.Value = clubId;
     }
 }

@@ -152,5 +152,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkGolfBag
   ShowTopMostFoldoutHeaderGroup: 1
+  ownerOnlyAccess: 1
+  maxClubs: 14
+  clubDb: {fileID: 11400000, guid: b91fb0ff4d155be418c801430b88c6d2, type: 2}
   LogicalOwnerClientId:
     m_InternalValue: 0
+  debugClubNames: []

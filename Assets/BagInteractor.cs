@@ -1,5 +1,5 @@
-using UnityEngine;
 using Unity.Netcode;
+using UnityEngine;
 
 public class BagInteractor : NetworkBehaviour
 {
@@ -7,42 +7,30 @@ public class BagInteractor : NetworkBehaviour
     [SerializeField] private float interactDist = 3.0f;
     [SerializeField] private LayerMask bagMask;
 
-    [SerializeField] private NetworkGolfBag bag;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
         if (!IsOwner) return;
 
-        //lookedAt = null;
+        if (!cam) cam = Camera.main;
+        if (!cam) return;
 
-        if (!cam)
+        if (!Physics.Raycast(cam.transform.position, cam.transform.forward, out var hit, interactDist, bagMask,
+                QueryTriggerInteraction.Ignore))
+            return;
+
+        var bag = hit.collider.GetComponentInParent<NetworkGolfBag>();
+        if (!bag) return;
+
+        // E = deposit currently equipped into bag
+        if (Input.GetKeyDown(KeyCode.E))
         {
-            cam = Camera.main;
-            if (!cam) return;
+            bag.DepositEquippedToBagServerRpc(NetworkObjectId);
         }
 
-        bool hitClub = Physics.Raycast(
-            cam.transform.position,
-            cam.transform.forward,
-            out var hit,
-            interactDist,
-            bagMask,
-            QueryTriggerInteraction.Ignore
-        );
-
-        //if (hitClub)
-            //lookedAt = hit.collider.GetComponentInParent<WorldClub>();
-
-        //Debug.DrawRay(
-            //cam.transform.position,
-            //cam.transform.forward * interactDist,
-            //lookedAt ? Color.green : Color.red
-        //);
+        // F = equip first club from bag
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            bag.EquipFromBagServerRpc(NetworkObjectId, 0);
+        }
     }
 }
