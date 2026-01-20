@@ -180,6 +180,7 @@ GameObject:
   - component: {fileID: 589703905635826597}
   - component: {fileID: 3940408468961494881}
   - component: {fileID: 9050580307216339934}
+  - component: {fileID: 7184046096730619240}
   m_Layer: 9
   m_Name: Main
   m_TagString: Untagged
@@ -565,6 +566,19 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   link: {fileID: 4182380670424442734}
   binder: {fileID: 5294826543001115773}
+  worldClubPrefab: {fileID: 7341628916448407326, guid: 0e332a805b4db2f4289acb5df4d92ea2, type: 3}
+  pickupRange: 3
+  dropForward: 0.6
+  dropUp: 0.1
+  throwSpeed: 10
+  throwUpBoost: 1.5
+  throwSpin: 25
+  throwSpeedMin: 2
+  throwSpeedMax: 8
+  throwUpBoostMin: 0.8
+  throwUpBoostMax: 2
+  throwSpinMin: 10
+  throwSpinMax: 35
 --- !u!114 &3940408468961494881
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -572,7 +586,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2617925885463999829}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 757b1e09afc62e24e8f3dc04c52bc307, type: 3}
   m_Name: 
@@ -598,6 +612,47 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   equipment: {fileID: 589703905635826597}
+--- !u!114 &7184046096730619240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2617925885463999829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c5ce1962ef1dd7468d3aa6e2ad5baa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DebugThrowKeys
+  ShowTopMostFoldoutHeaderGroup: 1
+  equip: {fileID: 0}
+  dropKey: 103
+  throwKey: 116
+  chargeTimeToFull: 0.75
+  chargeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &4339547246322372314
 GameObject:
   m_ObjectHideFlags: 0

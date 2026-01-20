@@ -7,7 +7,30 @@ public class NetworkClubEquipment : NetworkBehaviour
     [SerializeField] private GolferContextLink link;
     [SerializeField] private ClubVisualBinder binder;
 
-    // For now, treat this as a CLUB ID (not NetworkObjectId)
+    [Header("World Club Prefab (NetworkObject)")]
+    [SerializeField] private NetworkObject worldClubPrefab;
+
+    [Header("Pickup Validation")]
+    [SerializeField] private float pickupRange = 3.0f;
+
+    [Header("Drop / Throw")]
+    [SerializeField] private float dropForward = 0.6f;
+    [SerializeField] private float dropUp = 0.1f;
+
+    [SerializeField] private float throwSpeed = 10f;
+    [SerializeField] private float throwUpBoost = 1.5f;
+    [SerializeField] private float throwSpin = 25f;
+
+    [Header("Charged Throw")]
+    [SerializeField] private float throwSpeedMin = 4f;
+    [SerializeField] private float throwSpeedMax = 14f;
+    [SerializeField] private float throwUpBoostMin = 0.8f;
+    [SerializeField] private float throwUpBoostMax = 2.0f;
+    [SerializeField] private float throwSpinMin = 10f;
+    [SerializeField] private float throwSpinMax = 35f;
+
+
+    // CLUB ID (0 = none)
     public readonly NetworkVariable<int> equippedClubId =
         new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -29,27 +52,14 @@ public class NetworkClubEquipment : NetworkBehaviour
 
     private void OnEquippedChanged(int oldId, int newId)
     {
-        // equipment does NOT set visuals directly; binder listens too, but this is fine if you want single path:
         if (!binder) binder = GetComponent<ClubVisualBinder>();
         if (binder) binder.OnClubChanged(oldId, newId);
     }
 
-    // OWNER calls this (for debug / testing)
-    public void DebugEquip(int clubId)
-    {
-        if (!IsOwner) return;
-        DebugEquipServerRpc(clubId);
-    }
-
-    [ServerRpc(RequireOwnership = true)]
-    private void DebugEquipServerRpc(int clubId, ServerRpcParams rpcParams = default)
-    {
-        if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
-
-        equippedClubId.Value = clubId;
-    }
-
-        public void TryPickupWorldClub(WorldClub club)
+    // -------------------------
+    // Pickup (owner calls)
+    // -------------------------
+    public void TryPickupWorldClub(WorldClub club)
     {
         if (!IsOwner || club == null) return;
 
@@ -70,14 +80,169 @@ public class NetworkClubEquipment : NetworkBehaviour
         var worldClub = clubNO.GetComponent<WorldClub>();
         if (worldClub == null) return;
 
-        // Optional: distance validation (recommended)
+        // distance validation
         float dist = Vector3.Distance(transform.position, clubNO.transform.position);
-        if (dist > 3.0f) return;
+        if (dist > pickupRange) return;
 
-        // Equip by ID (visual binder will update everywhere)
+        // Equip by ID
         equippedClubId.Value = worldClub.ClubId;
 
-        // Remove world object (so it can't be picked by others)
+        // Remove from world
         clubNO.Despawn(true);
     }
+
+    // -------------------------
+    // Drop / Throw (owner calls)
+    // -------------------------
+    public void DropEquipped()
+    {
+        if (!IsOwner) return;
+
+        var cam = Camera.main;
+        if (!cam) return;
+
+        Vector3 pos = cam.transform.position + cam.transform.forward * dropForward + Vector3.up * dropUp;
+        Vector3 fwd = cam.transform.forward;
+
+        DropOrThrowServerRpc(pos, fwd, false);
     }
+
+    public void ThrowEquipped()
+    {
+        if (!IsOwner) return;
+
+        var cam = Camera.main;
+        if (!cam) return;
+
+        Vector3 pos = cam.transform.position + cam.transform.forward * dropForward + Vector3.up * dropUp;
+        Vector3 fwd = cam.transform.forward;
+
+        DropOrThrowServerRpc(pos, fwd, true);
+    }
+
+    [ServerRpc(RequireOwnership = true)]
+    private void DropOrThrowServerRpc(Vector3 spawnPos, Vector3 forward, bool doThrow, ServerRpcParams rpcParams = default)
+    {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
+
+        int clubId = equippedClubId.Value;
+        if (clubId <= 0) return;
+
+        if (worldClubPrefab == null)
+        {
+            Debug.LogError("[NetworkClubEquipment] worldClubPrefab is null.");
+            return;
+        }
+
+        if (forward.sqrMagnitude < 0.0001f) forward = Vector3.forward;
+        forward.Normalize();
+
+        NetworkObject no = Instantiate(worldClubPrefab, spawnPos, Quaternion.LookRotation(forward, Vector3.up));
+        no.Spawn(true);
+
+        var wc = no.GetComponent<WorldClub>();
+        if (wc != null) wc.SetClubIdServer(clubId);
+
+        var rb = no.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.WakeUp();
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
+            if (doThrow)
+            {
+                Vector3 v = forward * throwSpeed + Vector3.up * throwUpBoost;
+                rb.linearVelocity = v;
+
+                Vector3 spinAxis = Vector3.Cross(Vector3.up, forward);
+                if (spinAxis.sqrMagnitude < 0.0001f) spinAxis = Vector3.right;
+                spinAxis.Normalize();
+
+                rb.angularVelocity = spinAxis * throwSpin;
+            }
+        }
+
+        // Unequip after spawning
+        equippedClubId.Value = 0;
+    }
+
+    // -------------------------
+    // Optional debug equip
+    // -------------------------
+    public void DebugEquip(int clubId)
+    {
+        if (!IsOwner) return;
+        DebugEquipServerRpc(clubId);
+    }
+
+    [ServerRpc(RequireOwnership = true)]
+    private void DebugEquipServerRpc(int clubId, ServerRpcParams rpcParams = default)
+    {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
+        equippedClubId.Value = clubId;
+    }
+
+        public void ThrowEquippedCharged(float charge01)
+    {
+        if (!IsOwner) return;
+
+        var cam = Camera.main;
+        if (!cam) return;
+
+        Vector3 pos = cam.transform.position + cam.transform.forward * dropForward + Vector3.up * dropUp;
+        Vector3 fwd = cam.transform.forward;
+
+        charge01 = Mathf.Clamp01(charge01);
+        DropOrThrowChargedServerRpc(pos, fwd, charge01);
+    }
+
+    [ServerRpc(RequireOwnership = true)]
+    private void DropOrThrowChargedServerRpc(Vector3 spawnPos, Vector3 forward, float charge01, ServerRpcParams rpcParams = default)
+    {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
+
+        int clubId = equippedClubId.Value;
+        if (clubId <= 0) return;
+
+        if (worldClubPrefab == null)
+        {
+            Debug.LogError("[NetworkClubEquipment] worldClubPrefab is null.");
+            return;
+        }
+
+        charge01 = Mathf.Clamp01(charge01);
+
+        if (forward.sqrMagnitude < 0.0001f) forward = Vector3.forward;
+        forward.Normalize();
+
+        NetworkObject no = Instantiate(worldClubPrefab, spawnPos, Quaternion.LookRotation(forward, Vector3.up));
+        no.Spawn(true);
+
+        var wc = no.GetComponent<WorldClub>();
+        if (wc != null) wc.SetClubIdServer(clubId);
+
+        var rb = no.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.WakeUp();
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
+            float spd = Mathf.Lerp(throwSpeedMin, throwSpeedMax, charge01);
+            float up  = Mathf.Lerp(throwUpBoostMin, throwUpBoostMax, charge01);
+            float spin = Mathf.Lerp(throwSpinMin, throwSpinMax, charge01);
+
+            Vector3 v = forward * spd + Vector3.up * up;
+            rb.linearVelocity = v;
+
+            Vector3 spinAxis = Vector3.Cross(Vector3.up, forward);
+            if (spinAxis.sqrMagnitude < 0.0001f) spinAxis = Vector3.right;
+            spinAxis.Normalize();
+
+            rb.angularVelocity = spinAxis * spin;
+        }
+
+        equippedClubId.Value = 0;
+    }
+}

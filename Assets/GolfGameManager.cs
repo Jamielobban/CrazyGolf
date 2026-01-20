@@ -7,12 +7,14 @@ public class GolfGameManager : MonoBehaviour
 {
     [SerializeField] private NetworkObject golfBallPrefab;
     [SerializeField] private NetworkObject handRigPrefab;
+    [SerializeField] private NetworkObject golfBagPrefab;
 
     [Header("Spawn Points (optional)")]
     [SerializeField] private Transform[] teeSpawns;
 
     private readonly Dictionary<ulong, NetworkObject> ballByClient = new();
     private readonly Dictionary<ulong, NetworkObject> rigByClient  = new();
+    private readonly Dictionary<ulong, NetworkObject> bagByClient = new();
 
     private void OnEnable()
     {
@@ -39,6 +41,7 @@ public class GolfGameManager : MonoBehaviour
 
                 EnsureBallForClient(clientId);
                 EnsureRigForClient(clientId);
+                EnsureBagForClient(clientId);
 
                 // equip default for already-connected clients too
                 var client = kv.Value;
@@ -67,6 +70,7 @@ public class GolfGameManager : MonoBehaviour
 
         EnsureBallForClient(clientId);
         EnsureRigForClient(clientId);
+        EnsureBagForClient(clientId);
 
         if (nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject)
         {
@@ -94,6 +98,13 @@ public class GolfGameManager : MonoBehaviour
                 rigNO.Despawn(true);
 
             rigByClient.Remove(clientId);
+        }
+
+        if (bagByClient.TryGetValue(clientId, out var bagNO) && bagNO != null)
+        {
+            if (bagNO.IsSpawned)
+                bagNO.Despawn(true);
+            bagByClient.Remove(clientId);
         }
 
         // clear player's reference
@@ -199,5 +210,37 @@ public class GolfGameManager : MonoBehaviour
         var player = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
         if (player != null)
             player.SetMyBallIdServer(ballId);
+    }
+
+    private void EnsureBagForClient(ulong clientId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || !nm.IsServer) return;
+
+        if (golfBagPrefab == null)
+        {
+            Debug.LogError("[GolfGameManager] golfBagPrefab not set.");
+            return;
+        }
+
+        if (bagByClient.TryGetValue(clientId, out var existing) && existing != null && existing.IsSpawned)
+            return;
+
+        // Spawn near player spawn
+        Vector3 pos = GetSpawnPosForClient(clientId) + Vector3.right * 1.0f; // offset a bit
+        Quaternion rot = Quaternion.identity;
+
+        var bagNO = Instantiate(golfBagPrefab, pos, rot);
+        bagNO.Spawn();
+
+        // Make the bag owned by the client (so later you can gate access easily)
+        bagNO.ChangeOwnership(clientId);
+
+        // OPTIONAL: store logical owner id on the bag script
+        var bag = bagNO.GetComponent<NetworkGolfBag>();
+        if (bag != null)
+            bag.LogicalOwnerClientId.Value = clientId;
+
+        bagByClient[clientId] = bagNO;
     }
 }
