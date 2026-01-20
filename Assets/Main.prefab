@@ -504,8 +504,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GolferContextLink
   swing: {fileID: 4390947122104417625}
   golfer: {fileID: 5703685012536466997}
-  equippedClub: {fileID: 0}
-  equippedData: {fileID: 0}
+  clubDb: {fileID: 11400000, guid: b91fb0ff4d155be418c801430b88c6d2, type: 2}
   clubHead: {fileID: 0}
 --- !u!114 &5294826543001115773
 MonoBehaviour:
@@ -520,12 +519,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClubVisualBinder
   ShowTopMostFoldoutHeaderGroup: 1
-  clubs:
-  - id: 1
-    visualPrefab: {fileID: 4200646916718582470, guid: 95ae20b0fdc933c43b02ca0bb31fd25a, type: 3}
-  - id: 2
-    visualPrefab: {fileID: 4200646916718582470, guid: d597e65745cc26d459937cec7dfd6314, type: 3}
   link: {fileID: 4182380670424442734}
+  clubDb: {fileID: 11400000, guid: b91fb0ff4d155be418c801430b88c6d2, type: 2}
 --- !u!114 &1432556614112789841
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -566,7 +561,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   link: {fileID: 4182380670424442734}
   binder: {fileID: 5294826543001115773}
-  worldClubPrefab: {fileID: 7341628916448407326, guid: 0e332a805b4db2f4289acb5df4d92ea2, type: 3}
+  clubDb: {fileID: 11400000, guid: b91fb0ff4d155be418c801430b88c6d2, type: 2}
   pickupRange: 3
   dropForward: 0.6
   dropUp: 0.1
@@ -586,7 +581,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2617925885463999829}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 757b1e09afc62e24e8f3dc04c52bc307, type: 3}
   m_Name: 

@@ -6,6 +6,9 @@ public class ClubData : ScriptableObject
     [Header("Identity")]
     public string clubName = "Iron";
 
+    public GameObject heldPrefab;
+    public GameObject worldPrefab; 
+
     [Header("Swing Feel (client)")]
     public float yawSpeed = 4f;
     public float pitchSpeed = 4f;

@@ -2,48 +2,39 @@ using UnityEngine;
 
 public class GolferContextLink : MonoBehaviour
 {
-   [Header("Runtime references")]
+    [Header("Runtime references")]
     public SwingPivotMouseRotate swing;
     public NetworkGolferPlayer golfer;
 
-    [Header("Equipped (runtime)")]
-    [SerializeField] public GolfClub equippedClub; 
-    [SerializeField] private ClubData equippedData;
+    [Header("Database")]
+    [SerializeField] private ClubDatabase clubDb;
+
+    [Header("Equipped (runtime refs only)")]
     [SerializeField] private Transform clubHead;
 
-     public GolfClub EquippedClub => equippedClub;
-     public ClubData Data => equippedData;
-     public Transform ClubHead => clubHead;
+    public Transform ClubHead => clubHead;
 
-      void Awake()
+    // Source of truth for id should be NetworkClubEquipment
+    public int EquippedClubId
+    {
+        get
+        {
+            var eq = GetComponent<NetworkClubEquipment>();
+            return eq != null ? eq.equippedClubId.Value : 0;
+        }
+    }
+
+    public ClubData Data => clubDb != null ? clubDb.Get(EquippedClubId) : null;
+
+    private void Awake()
     {
         if (!golfer) golfer = GetComponent<NetworkGolferPlayer>();
         if (!swing)  swing  = GetComponent<SwingPivotMouseRotate>();
-
     }
 
-    public void SetEquippedClub(GolfClub club)
+    // Called by your binder after it instantiates the held prefab
+    public void SetClubHead(Transform head)
     {
-        equippedClub = club;
-        equippedData = club ? club.data : null;
-
-        clubHead = null;
-        if (!equippedClub) return;
-
-        var binder = equippedClub.GetComponentInChildren<ClubContextBinder>(true);
-        if (!binder || !binder.clubhead)
-        {
-            Debug.LogError($"[{name}] ClubContextBinder/clubhead missing on {equippedClub.name}");
-            return;
-        }
-
-        clubHead = binder.clubhead;
+        clubHead = head;
     }
-    public void SetEquippedData(ClubData data)
-    {
-        equippedClub = null;
-        equippedData = data;
-    }
-
-    
 }

@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Iron
   m_EditorClassIdentifier: Assembly-CSharp::ClubData
   clubName: Iron
+  heldPrefab: {fileID: 4200646916718582470, guid: 95ae20b0fdc933c43b02ca0bb31fd25a, type: 3}
+  worldPrefab: {fileID: 4200646916718582470, guid: 0e332a805b4db2f4289acb5df4d92ea2, type: 3}
   yawSpeed: 7
   pitchSpeed: 4
   pitchMin: -80

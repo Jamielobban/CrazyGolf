@@ -227,7 +227,7 @@ public class GolfGameManager : MonoBehaviour
             return;
 
         // Spawn near player spawn
-        Vector3 pos = GetSpawnPosForClient(clientId) + Vector3.right * 1.0f; // offset a bit
+        Vector3 pos = GetSpawnPosForClient(clientId) + Vector3.right * 3.0f; // offset a bit
         Quaternion rot = Quaternion.identity;
 
         var bagNO = Instantiate(golfBagPrefab, pos, rot);

@@ -16,6 +16,9 @@ public class ClubContextBinder : MonoBehaviour
 
     public void Bind(GolferContextLink link)
     {
+        if (link != null)
+            link.SetClubHead(clubhead); 
+
         foreach (var l in loggers)
             if (l) l.BindContext(link);
 

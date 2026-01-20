@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Flat
   m_EditorClassIdentifier: Assembly-CSharp::ClubData
   clubName: Flat
+  heldPrefab: {fileID: 4200646916718582470, guid: d597e65745cc26d459937cec7dfd6314, type: 3}
+  worldPrefab: {fileID: 4200646916718582470, guid: 334bcb6cba18f4441a04a32bbc3a6c7b, type: 3}
   yawSpeed: 7
   pitchSpeed: 4
   pitchMin: -80

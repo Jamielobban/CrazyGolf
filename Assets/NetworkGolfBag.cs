@@ -25,6 +25,7 @@ public class NetworkGolfBag : NetworkBehaviour
         if (ClubIds.Count >= capacity) return false;
 
         ClubIds.Add(clubId);
+        //Debug.Log()
         return true;
     }
 }

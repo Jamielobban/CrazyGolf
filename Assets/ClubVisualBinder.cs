@@ -4,15 +4,9 @@ using UnityEngine;
 
 public class ClubVisualBinder : NetworkBehaviour
 {
-    [System.Serializable]
-    public struct ClubEntry
-    {
-        public int id;
-        public GameObject visualPrefab;
-    }
-
-    [SerializeField] private ClubEntry[] clubs;
+    [Header("Refs")]
     [SerializeField] private GolferContextLink link;
+    [SerializeField] private ClubDatabase clubDb;
 
     private NetworkClubEquipment equipment;
     private GameObject currentClub;
@@ -23,15 +17,14 @@ public class ClubVisualBinder : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         if (!link) link = GetComponent<GolferContextLink>();
+        if (!equipment) equipment = GetComponent<NetworkClubEquipment>();
 
-        equipment = GetComponent<NetworkClubEquipment>();
         if (!equipment)
         {
             Debug.LogError("[ClubVisualBinder] Missing NetworkClubEquipment.");
             return;
         }
 
-        // Listen to the SAME NV (server-written)
         equipment.equippedClubId.OnValueChanged += OnClubChanged;
 
         // apply initial
@@ -42,6 +35,9 @@ public class ClubVisualBinder : NetworkBehaviour
     {
         if (equipment != null)
             equipment.equippedClubId.OnValueChanged -= OnClubChanged;
+
+        if (attachRoutine != null)
+            StopCoroutine(attachRoutine);
 
         if (currentClub)
             Destroy(currentClub);
@@ -64,31 +60,43 @@ public class ClubVisualBinder : NetworkBehaviour
             currentClub = null;
         }
 
-        if (link) link.SetEquippedClub(null);
+        // Clear runtime refs (not data)
+        if (link != null)
+        {
+           link.SetClubHead(null);
+        }
 
         if (newId <= 0) return; // 0 = none
 
-        var prefab = GetVisualPrefab(newId);
-        if (!prefab)
+        if (!clubDb)
         {
-            Debug.LogError($"[ClubVisualBinder] No visual prefab mapped for clubId={newId}");
+            Debug.LogError("[ClubVisualBinder] clubDb is not assigned.");
             return;
         }
 
-        currentClub = Instantiate(prefab);
+        ClubData cd = clubDb.Get(newId);
+        if (cd == null)
+        {
+            Debug.LogError($"[ClubVisualBinder] No ClubData found for clubId={newId}");
+            return;
+        }
 
+        // If you go with “2 prefabs per club”, use heldPrefab here
+        if (cd.heldPrefab == null)
+        {
+            Debug.LogError($"[ClubVisualBinder] ClubData for id={newId} missing heldPrefab");
+            return;
+        }
+
+        currentClub = Instantiate(cd.heldPrefab);
+
+        // Bind runtime refs like clubhead into GolferContextLink
         var ctxBinder = currentClub.GetComponent<ClubContextBinder>();
         if (ctxBinder) ctxBinder.Bind(link);
-        else Debug.LogWarning("[ClubVisualBinder] Club prefab missing ClubContextBinder.");
+        else Debug.LogWarning("[ClubVisualBinder] Held prefab missing ClubContextBinder.");
 
+        // Attach under the correct hand rig pivot
         attachRoutine = StartCoroutine(AttachWhenRigReady(currentClub, equipment.OwnerClientId));
-    }
-
-    private GameObject GetVisualPrefab(int id)
-    {
-        foreach (var c in clubs)
-            if (c.id == id) return c.visualPrefab;
-        return null;
     }
 
     private IEnumerator AttachWhenRigReady(GameObject clubInstance, ulong playerOwnerClientId)
@@ -107,10 +115,6 @@ public class ClubVisualBinder : NetworkBehaviour
         }
 
         AttachToPivot(clubInstance.transform, gripPivot);
-
-        var gc = clubInstance.GetComponent<GolfClub>();
-        if (gc && link)
-            link.SetEquippedClub(gc);
 
         attachRoutine = null;
     }
@@ -142,7 +146,7 @@ public class ClubVisualBinder : NetworkBehaviour
         Transform gripPoint = club.Find("GripPoint");
         if (!gripPoint)
         {
-            Debug.LogError("[ClubVisualBinder] Club visual prefab missing GripPoint.");
+            Debug.LogError("[ClubVisualBinder] Held prefab missing GripPoint.");
             club.localPosition = Vector3.zero;
             club.localRotation = Quaternion.identity;
             return;
