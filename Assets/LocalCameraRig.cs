@@ -130,11 +130,6 @@ public class LocalCameraRig : MonoBehaviour
             CacheYawDrivers();
     }
 
-    /// <summary>
-    /// THE FIX: Keep Cinemachine's internal yaw axis values synced to the body yaw,
-    /// even if that camera is currently inactive. Call every frame while swinging,
-    /// and optionally for a short blend window after exiting swing.
-    /// </summary>
     public void SyncYawAxes(float worldYawDeg)
     {
         worldYawDeg = Mathf.Repeat(worldYawDeg, 360f);
@@ -216,5 +211,11 @@ public class LocalCameraRig : MonoBehaviour
         t.TrackingTarget = tracking;
         t.LookAtTarget = lookAt;
         cam.Target = t;
+    }
+
+    public void SetLookEnabled(bool enabled)
+    {
+        if (inputAxis != null)
+            inputAxis.enabled = enabled;
     }
 }

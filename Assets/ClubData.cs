@@ -5,6 +5,8 @@ public class ClubData : ScriptableObject
 {
     [Header("Identity")]
     public string clubName = "Iron";
+    public Sprite icon;
+    public string shortName;
 
     public GameObject heldPrefab;
     public GameObject worldPrefab; 
