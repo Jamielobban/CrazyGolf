@@ -1,62 +1,25 @@
-using Unity.Netcode;
 using UnityEngine;
 
-public class ClubInteractor : NetworkBehaviour
+public class WorldClubItemSource : MonoBehaviour, IInventoryItemSource
 {
-    [SerializeField] private Camera cam;
-    [SerializeField] private float interactDist = 3.0f;
-    [SerializeField] private LayerMask clubMask;
+    [SerializeField] private WorldClub club;
 
-    [SerializeField] private NetworkClubEquipment equipment;
-
-    private WorldClub lookedAt;
+    public int Priority => 10;
+    public string TakePrompt => "Pick up club";
 
     private void Awake()
     {
-        if (!equipment) equipment = GetComponent<NetworkClubEquipment>();
+        if (!club) club = GetComponentInParent<WorldClub>();
     }
 
-    private void Update()
+    public bool Take(Interactor who)
     {
-        if (!IsOwner) return;
+        if (club == null) return false;
 
-        lookedAt = null;
+        var equipment = who.GetComponent<NetworkClubEquipment>();
+        if (!equipment) return false;
 
-        if (!cam)
-        {
-            cam = Camera.main;
-            if (!cam) return;
-        }
-
-        bool hitClub = Physics.Raycast(
-            cam.transform.position,
-            cam.transform.forward,
-            out var hit,
-            interactDist,
-            clubMask,
-            QueryTriggerInteraction.Ignore
-        );
-
-        if (hitClub)
-            lookedAt = hit.collider.GetComponentInParent<WorldClub>();
-
-        Debug.DrawRay(
-            cam.transform.position,
-            cam.transform.forward * interactDist,
-            lookedAt ? Color.green : Color.red
-        );
-
-        if (lookedAt != null)
-        {
-            Debug.Log($"[LOOK] {lookedAt.name} clubId={lookedAt.ClubId} (press E)");
-
-            if (Input.GetKeyDown(KeyCode.E))
-                equipment.TryPickupWorldClub(lookedAt);
-        }
-        else
-        {
-            if (Input.GetKeyDown(KeyCode.E))
-                Debug.Log("[PRESSED E] (no club)");
-        }
+        equipment.TryPickupWorldClub(club);
+        return true;
     }
 }

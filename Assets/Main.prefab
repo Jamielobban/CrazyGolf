@@ -210,11 +210,12 @@ GameObject:
   - component: {fileID: 1432556614112789841}
   - component: {fileID: 589703905635826597}
   - component: {fileID: 3940408468961494881}
-  - component: {fileID: 9050580307216339934}
   - component: {fileID: 7184046096730619240}
   - component: {fileID: 628823234784271401}
   - component: {fileID: 4862434794709245143}
   - component: {fileID: 5962578270019788832}
+  - component: {fileID: 797064019939048379}
+  - component: {fileID: 9212137560322079616}
   m_Layer: 9
   m_Name: Main
   m_TagString: Untagged
@@ -361,7 +362,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3120032765
+  GlobalObjectIdHash: 1052692653
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -623,25 +624,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DebugEquipKeys
   ShowTopMostFoldoutHeaderGroup: 1
   equip: {fileID: 0}
---- !u!114 &9050580307216339934
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2617925885463999829}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ce6a27dda0f8664eb5e95287fd8c8c3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ClubInteractor
-  ShowTopMostFoldoutHeaderGroup: 1
-  cam: {fileID: 0}
-  interactDist: 3
-  clubMask:
-    serializedVersion: 2
-    m_Bits: 128
-  equipment: {fileID: 589703905635826597}
 --- !u!114 &7184046096730619240
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -697,10 +679,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BagInteractor
   ShowTopMostFoldoutHeaderGroup: 1
   cam: {fileID: 0}
-  interactDist: 3
-  bagMask:
-    serializedVersion: 2
-    m_Bits: 1024
   dropForwardSpeed: 2
   dropUpSpeed: 0.5
   dropSpinYaw: 3
@@ -731,6 +709,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LocalPlayerUIBootstrap
   ShowTopMostFoldoutHeaderGroup: 1
   radialUIPrefab: {fileID: 9208437933092205099, guid: d3540ebe5670f7e4ea32f9337521d007, type: 3}
+--- !u!114 &797064019939048379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2617925885463999829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61c38de1cf06f1e4492d5ca6a853e8c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Interactor
+  ShowTopMostFoldoutHeaderGroup: 1
+  cam: {fileID: 0}
+  interactDist: 3
+  interactMask:
+    serializedVersion: 2
+    m_Bits: 1152
+--- !u!114 &9212137560322079616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2617925885463999829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebc52d872fa3ece428d574106c1c940c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHeldController
+  ShowTopMostFoldoutHeaderGroup: 1
+  cam: {fileID: 0}
 --- !u!1 &4339547246322372314
 GameObject:
   m_ObjectHideFlags: 0

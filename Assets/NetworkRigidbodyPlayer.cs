@@ -31,6 +31,7 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     public Transform ViewTransform => localRig != null ? localRig.ViewTransform : null;
 
     private Rigidbody rb;
+    private Interactor interactor;
 
     // Input (owner)
     private PlayerInputActions input;
@@ -72,11 +73,22 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     {
         if (IsOwner)
         {
+            interactor = GetComponent<Interactor>();
+
             input = new PlayerInputActions();
             input.Enable();
 
             input.Player.Move.performed += ctx => moveInputOwner = ctx.ReadValue<Vector2>();
             input.Player.Move.canceled  += _   => moveInputOwner = Vector2.zero;
+            input.Player.Interact.performed += _ =>
+            {
+                interactor.TryTapUse();
+            };
+
+            input.Player.HoldInteract.performed += _ =>
+            {
+                interactor.TryHoldInteract();
+            };
 
             SpawnLocalCameraRigIfNeeded();
 

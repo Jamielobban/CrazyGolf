@@ -243,4 +243,5 @@ public class GolfGameManager : MonoBehaviour
 
         bagByClient[clientId] = bagNO;
     }
+    //so i cant child it under a parent without it having a NO. so in theory i server drive the positions to match?
 }

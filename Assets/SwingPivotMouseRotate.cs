@@ -84,6 +84,9 @@ public class SwingPivotMouseRotate : NetworkBehaviour
 
         currentData = link ? link.Data : null;
 
+        if( currentData == null)
+            return;
+
         var d = currentData;
 
         yawSpeed = d.yawSpeed;

@@ -127,6 +127,7 @@ GameObject:
   - component: {fileID: 7444272803040274224}
   - component: {fileID: 4217672576433580395}
   - component: {fileID: 7378196468089457610}
+  - component: {fileID: 7200060845614245543}
   m_Layer: 7
   m_Name: WorldIron
   m_TagString: GolfClub
@@ -163,7 +164,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1969868852
+  GlobalObjectIdHash: 1789111137
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -301,6 +302,20 @@ MonoBehaviour:
   UseRigidBodyForMotion: 0
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
+--- !u!114 &7200060845614245543
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4200646916718582470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ce6a27dda0f8664eb5e95287fd8c8c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ClubInteractor
+  ShowTopMostFoldoutHeaderGroup: 1
+  club: {fileID: 0}
 --- !u!1 &5046744013945983892
 GameObject:
   m_ObjectHideFlags: 0
