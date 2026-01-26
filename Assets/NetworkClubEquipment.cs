@@ -54,6 +54,8 @@ public class NetworkClubEquipment : NetworkBehaviour
     {
         if (!binder) binder = GetComponent<ClubVisualBinder>();
         if (binder) binder.OnClubChanged(oldId, newId);
+        var ownerId = OwnerClientId;
+        GameSignals.RaiseClubEquipped(ownerId, newId);
     }
 
     // -------------------------
@@ -279,4 +281,5 @@ public class NetworkClubEquipment : NetworkBehaviour
         if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
         equippedClubId.Value = clubId;
     }
+
 }

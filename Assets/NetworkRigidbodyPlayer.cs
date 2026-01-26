@@ -61,6 +61,8 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     private Vector2 lastMoveSent;
     private float lastYawSentToServer;
 
+    private PlayerHeldController held;
+
     public NetworkVariable<Quaternion> NetAimRotation =
         new(Quaternion.identity, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
@@ -74,6 +76,7 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
         if (IsOwner)
         {
             interactor = GetComponent<Interactor>();
+            held = GetComponent<PlayerHeldController>();
 
             input = new PlayerInputActions();
             input.Enable();
@@ -89,6 +92,8 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
             {
                 interactor.TryHoldInteract();
             };
+            input.Player.Drop.performed += _ => held.Drop();
+            input.Player.HoldDrop.performed += _ => held.Throw(1f);
 
             SpawnLocalCameraRigIfNeeded();
 

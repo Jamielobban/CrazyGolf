@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 6408981345887601310}
   - component: {fileID: 6138140736917751231}
   - component: {fileID: 8689395208704372101}
+  - component: {fileID: 544445845974250634}
   m_Layer: 10
   m_Name: GolfBag
   m_TagString: Untagged
@@ -273,3 +274,16 @@ MonoBehaviour:
   UseRigidBodyForMotion: 0
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
+--- !u!114 &544445845974250634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6445110625311404722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eec67206414956e468d758b6dd92d1b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BagUseable
+  bagInv: {fileID: 2671078318137393479}

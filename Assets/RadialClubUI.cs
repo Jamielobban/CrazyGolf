@@ -346,7 +346,7 @@ public class RadialClubUI : MonoBehaviour
     private void Log(string msg)
     {
         if (!debugLogs) return;
-        Debug.Log($"[RadialClubUI] {msg}", this);
+        //Debug.Log($"[RadialClubUI] {msg}", this);
     }
     
     private void DisablePlayerLook(bool uiOpen)

@@ -106,7 +106,7 @@ public class NetworkGolfBagCarry : NetworkBehaviour
             heldByClient.Remove(removeKey);
 
         // Add current mapping if held
-        if (IsHeld.Value)
+        if (IsHeld.Value && HeldByClientId.Value != 0)
             heldByClient[HeldByClientId.Value] = this;
     }
 

@@ -50,11 +50,11 @@ public class GripInertiaFollower : MonoBehaviour
         if (bodyAnchor)
             SnapNow();
 
-        Debug.Log(
-            $"[GripFollower] Bound to client {followClientId}, " +
-            $"anchor={(bodyAnchor ? bodyAnchor.name : "NULL")}"
-        );
-        Debug.Log($"[GripFollower] Bound followClientId={followClientId} local={nm?.LocalClientId} canUseLocalCamera={canUseLocalCamera}");
+        //Debug.Log(
+           // $"[GripFollower] Bound to client {followClientId}, " +
+            //$"anchor={(bodyAnchor ? bodyAnchor.name : "NULL")}"
+        //);
+        //Debug.Log($"[GripFollower] Bound followClientId={followClientId} local={nm?.LocalClientId} canUseLocalCamera={canUseLocalCamera}");
     }
 
    private void TryResolveOwnerPlayer()

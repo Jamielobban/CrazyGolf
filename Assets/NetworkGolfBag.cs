@@ -111,4 +111,5 @@ public class NetworkGolfBag : NetworkBehaviour
         Clubs.RemoveAt(index);
         equip.equippedClubId.Value = clubId;
     }
+    
 }

@@ -30,6 +30,11 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
     public NetworkGolfBall MyBall { get; private set; }
 
+    private readonly NetworkVariable<ulong> myBagNetworkId =
+    new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public NetworkGolfBag MyBag { get; private set; }
+
     //public NetworkVariable<int> EquippedClubId =
         //new(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -139,5 +144,28 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
         //Debug.Log(cd.name + " -> " + cd.maxImpulse);
         ball.HitServer(dir, impulse, Mathf.Clamp(curve01, -1f, 1f));
+        BallHitClientRpc(senderId, dir, impulse);
+    }
+
+    
+    public void SetMyBagIdServer(ulong bagId)
+    {
+        if (!IsServer) return;
+        myBagNetworkId.Value = bagId;
+    }
+
+    private void OnMyBagIdChanged(ulong oldValue, ulong newValue) => TryResolveMyBag(newValue);
+
+    private void TryResolveMyBag(ulong netId)
+    {
+        if (netId == 0) { MyBag = null; return; }
+        if (NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(netId, out var no) && no != null)
+            MyBag = no.GetComponent<NetworkGolfBag>();
+    }
+
+    [ClientRpc]
+    private void BallHitClientRpc(ulong clientId, Vector3 dir, float impulse)
+    {
+        GameSignals.RaiseBallHit(clientId, dir, impulse);
     }
 }

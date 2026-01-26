@@ -362,7 +362,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1052692653
+  GlobalObjectIdHash: 3120032765
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -741,6 +741,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHeldController
   ShowTopMostFoldoutHeaderGroup: 1
   cam: {fileID: 0}
+  bagDropForward: 1
+  bagDropUp: 0.5
+  bagThrowForwardMin: 2
+  bagThrowForwardMax: 8
+  bagThrowUpMin: 0.8
+  bagThrowUpMax: 2.5
+  bagSpinMin: 2
+  bagSpinMax: 8
 --- !u!1 &4339547246322372314
 GameObject:
   m_ObjectHideFlags: 0

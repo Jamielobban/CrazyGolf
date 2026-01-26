@@ -30,8 +30,8 @@ public class Interactor : NetworkBehaviour
         Debug.DrawRay(cam.transform.position, cam.transform.forward * interactDist,
             CurrentUseable != null ? Color.green : Color.red);
 
-        if (CurrentUseable != null)
-            Debug.Log($"[LOOK] {((MonoBehaviour)CurrentUseable).name} - {CurrentUseable.UsePrompt} (tap E)");
+        //if (CurrentUseable != null)
+           // Debug.Log($"[LOOK] {((MonoBehaviour)CurrentUseable).name} - {CurrentUseable.UsePrompt} (tap E)");
     }
 
     public void TryTapUse()
@@ -40,7 +40,7 @@ public class Interactor : NetworkBehaviour
 
         if (CurrentUseable == null)
         {
-            Debug.Log("[E TAP] nothing useable");
+            //Debug.Log("[E TAP] nothing useable");
             return;
         }
 

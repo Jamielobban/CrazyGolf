@@ -19,7 +19,7 @@ public class PlayerRegistry : MonoBehaviour
     {
         if (!ctx || !ctx.golfer) return;
         ctxByClient[ctx.golfer.OwnerClientId] = ctx;
-        Debug.Log($"[PlayerRegistry] Registered client {ctx.golfer.OwnerClientId} -> {ctx.name}");
+        //Debug.Log($"[PlayerRegistry] Registered client {ctx.golfer.OwnerClientId} -> {ctx.name}");
     }
 
     public void Unregister(GolferContextLink ctx)
@@ -30,7 +30,7 @@ public class PlayerRegistry : MonoBehaviour
         if (ctxByClient.TryGetValue(id, out var existing) && existing == ctx)
             ctxByClient.Remove(id);
 
-        Debug.Log($"[PlayerRegistry] Unregistered client {id} -> {ctx.name}");
+        //Debug.Log($"[PlayerRegistry] Unregistered client {id} -> {ctx.name}");
     }
 
     public bool TryGetContext(ulong clientId, out GolferContextLink ctx)

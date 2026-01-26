@@ -240,8 +240,21 @@ public class GolfGameManager : MonoBehaviour
         var bag = bagNO.GetComponent<NetworkGolfBag>();
         if (bag != null)
             bag.LogicalOwnerClientId.Value = clientId;
+            AssignBagIdToPlayer(clientId, bagNO.NetworkObjectId);
 
         bagByClient[clientId] = bagNO;
+    }
+    private void AssignBagIdToPlayer(ulong clientId, ulong bagId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (!nm || !nm.IsServer) return;
+
+        if (!nm.ConnectedClients.TryGetValue(clientId, out var client)) return;
+        if (client.PlayerObject == null) return;
+
+        var player = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
+        if (player != null)
+            player.SetMyBagIdServer(bagId);
     }
     //so i cant child it under a parent without it having a NO. so in theory i server drive the positions to match?
 }
