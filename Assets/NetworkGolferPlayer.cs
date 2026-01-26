@@ -54,6 +54,11 @@ public class NetworkGolferPlayer : NetworkBehaviour
 
         if (myBallNetworkId.Value != 0)
             TryResolveMyBall(myBallNetworkId.Value);
+
+        myBagNetworkId.OnValueChanged += OnMyBagIdChanged;
+
+        if (myBagNetworkId.Value != 0)
+            TryResolveMyBag(myBagNetworkId.Value);
     }
 
     public override void OnNetworkDespawn()
@@ -66,6 +71,7 @@ public class NetworkGolferPlayer : NetworkBehaviour
         }
 
         myBallNetworkId.OnValueChanged -= OnMyBallIdChanged;
+        myBagNetworkId.OnValueChanged -= OnMyBagIdChanged;
         base.OnNetworkDespawn();
     }
 
@@ -143,6 +149,7 @@ public class NetworkGolferPlayer : NetworkBehaviour
         float impulse = Mathf.Lerp(minI, maxI, Mathf.Clamp01(power01));
 
         //Debug.Log(cd.name + " -> " + cd.maxImpulse);
+        FindFirstObjectByType<GolfHoleManager>()?.AddStrokeServer(senderId);
         ball.HitServer(dir, impulse, Mathf.Clamp(curve01, -1f, 1f));
         BallHitClientRpc(senderId, dir, impulse);
     }

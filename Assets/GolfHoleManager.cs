@@ -6,6 +6,16 @@ public class GolfHoleManager : NetworkBehaviour
 {
     private readonly Dictionary<ulong, int> strokesByClient = new();
 
+    [System.Serializable]
+    public struct StrokeDebugRow
+    {
+        public ulong clientId;
+        public int strokes;
+    }
+
+    [Header("DEBUG (Inspector Only)")]
+    [SerializeField] private List<StrokeDebugRow> debugStrokes = new();
+
     // Server: call this when a validated hit occurs (your RequestHitBallByIdServerRpc)
     public void AddStrokeServer(ulong clientId)
     {
@@ -17,6 +27,8 @@ public class GolfHoleManager : NetworkBehaviour
         strokesByClient[clientId] = strokes;
 
         Debug.Log($"[GOLF] Client {clientId} stroke {strokes}");
+
+        SyncDebug();
 
         // Notify everyone for UI/SFX etc.
         StrokeCountChangedClientRpc(clientId, strokes);
@@ -61,5 +73,18 @@ public class GolfHoleManager : NetworkBehaviour
     private void BallHoledClientRpc(ulong clientId, int strokes, Vector3 cupPos)
     {
         GameSignals.RaiseBallHoled(clientId, strokes, cupPos);
+    }
+
+    private void SyncDebug()
+    {
+        debugStrokes.Clear();
+        foreach (var kv in strokesByClient)
+        {
+            debugStrokes.Add(new StrokeDebugRow
+            {
+                clientId = kv.Key,
+                strokes = kv.Value
+            });
+        }
     }
 }
