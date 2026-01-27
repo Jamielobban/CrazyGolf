@@ -71,8 +71,8 @@ public class NetworkClubEquipment : NetworkBehaviour
         RequestPickupWorldClubServerRpc(no.NetworkObjectId);
     }
 
-    [ServerRpc(RequireOwnership = true)]
-    private void RequestPickupWorldClubServerRpc(ulong clubNetObjectId, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    private void RequestPickupWorldClubServerRpc(ulong clubNetObjectId, RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
 
@@ -139,8 +139,8 @@ public class NetworkClubEquipment : NetworkBehaviour
     // -------------------------
     // Server: spawn correct world prefab by equippedClubId
     // -------------------------
-    [ServerRpc(RequireOwnership = true)]
-    private void DropOrThrowServerRpc(Vector3 spawnPos, Vector3 forward, bool doThrow, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    private void DropOrThrowServerRpc(Vector3 spawnPos, Vector3 forward, bool doThrow, RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
 
@@ -202,8 +202,8 @@ public class NetworkClubEquipment : NetworkBehaviour
         equippedClubId.Value = 0;
     }
 
-    [ServerRpc(RequireOwnership = true)]
-    private void DropOrThrowChargedServerRpc(Vector3 spawnPos, Vector3 forward, float charge01, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    private void DropOrThrowChargedServerRpc(Vector3 spawnPos, Vector3 forward, float charge01, RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
 
@@ -275,8 +275,8 @@ public class NetworkClubEquipment : NetworkBehaviour
         DebugEquipServerRpc(clubId);
     }
 
-    [ServerRpc(RequireOwnership = true)]
-    private void DebugEquipServerRpc(int clubId, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    private void DebugEquipServerRpc(int clubId, RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
         equippedClubId.Value = clubId;

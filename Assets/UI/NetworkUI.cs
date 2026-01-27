@@ -6,7 +6,10 @@ public class NetworkUI : MonoBehaviour
     public void StartHost()
     {
         NetworkManager.Singleton.StartHost();
-        //Debug.Log("Started HOST");
+
+        var match = FindFirstObjectByType<GolfMatchNet>();
+        if (match != null)
+            match.RequestStartHole();
     }
 
     public void StartClient()

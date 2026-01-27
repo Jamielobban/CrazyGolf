@@ -14,6 +14,8 @@ public class GolfStanceController : NetworkBehaviour
     [SerializeField] private NetworkRigidbodyPlayer movement;
     [SerializeField] private GripInertiaFollower grip;
     [SerializeField] private SwingPivotMouseRotate swingPivotDriver;
+    [SerializeField] private GolferContextLink context;
+    [SerializeField] private PlayerInputGate gate;
 
     [Header("Targets (player)")]
     [SerializeField] private Transform fpsFollow;
@@ -47,6 +49,8 @@ public class GolfStanceController : NetworkBehaviour
 
         if (!movement) movement = GetComponent<NetworkRigidbodyPlayer>();
         if (!swingLockOrbit) swingLockOrbit = GetComponent<SwingLockOrbitNet>();
+        if (!context) context = GetComponent<GolferContextLink>();
+        gate = GetComponent<PlayerInputGate>();
 
         rig = movement ? movement.LocalRig : null;
 
@@ -71,12 +75,16 @@ public class GolfStanceController : NetworkBehaviour
             rig.SyncYawAxes(transform.eulerAngles.y);
         }
 
-        // Swing camera peek (your existing logic)
         if (stance == Stance.Swing && rig != null)
         {
             float input01 = 0f;
-            if (Input.GetKey(KeyCode.Q)) input01 -= 1f;
-            if (Input.GetKey(KeyCode.E)) input01 += 1f;
+
+            if (movement != null)
+                input01 = movement.PeekAxis;
+
+            if (gate != null && !gate.AllowPeek)
+                input01 = 0f;
+
             rig.UpdateSwingPeek(input01, Time.deltaTime);
         }
     }
@@ -84,6 +92,7 @@ public class GolfStanceController : NetworkBehaviour
     private void EnterSwing()
 {
     stance = Stance.Swing;
+    if (gate != null) gate.inSwing = true;
 
     if (grip)
         grip.SetFollowBodyAnchor();
@@ -92,12 +101,19 @@ public class GolfStanceController : NetworkBehaviour
 
     if (movement)
     {
-        movement.SetYawEnabled(false);                 // ✅ stops yaw sending (hasYaw=false)
+        movement.SetYawEnabled(false);                
         movement.SetServerMovementEnabledServerRpc(false); // slow-walk
         movement.SetServerLocomotionEnabledServerRpc(true); // keep locomotion unless lock succeeds
     }
 
     swingPivotDriver?.BeginSwing();
+
+    var cd = GetEquippedClubData();
+    if (cd != null)
+    {
+        if (hitPoint)   hitPoint.localPosition   = cd.swingHitPointLocal;
+        if (swingFollow) swingFollow.localPosition = cd.swingFollowLocal;
+    }
 
     if (rig)
     {
@@ -110,14 +126,17 @@ public class GolfStanceController : NetworkBehaviour
     {
         Vector3 centerWorld = GetSwingCenterWorld();
         Vector3 refForward = GetSwingReferenceForward();
-        swingLockOrbit.BeginSwing(centerWorld, refForward);
+        float back = cd ? cd.stanceBackOffset : 1.2f;
+        float side = cd ? cd.stanceSideOffset : 0.35f;
+
+        swingLockOrbit.BeginSwing(centerWorld, refForward, back, side);
     }
 }
 
 private void ExitSwing()
 {
     stance = Stance.Walk;
-
+    if (gate != null) gate.inSwing = false;
     // stop orbit first (it will re-enable server locomotion internally if you kept that)
     swingLockOrbit?.EndSwing();
 
@@ -205,5 +224,11 @@ private void ApplyWalk()
         Vector3 pf = transform.forward;
         pf.y = 0f;
         return (pf.sqrMagnitude > 0.0001f) ? pf.normalized : Vector3.forward;
+    }
+    private ClubData GetEquippedClubData()
+    {
+        if (context != null && context.Data != null) return context.Data;
+        // or: derive from equipment.equippedClubId + clubDb (if you prefer)
+        return null;
     }
 }

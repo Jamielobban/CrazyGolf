@@ -64,8 +64,8 @@ public class NetworkGolfBag : NetworkBehaviour
         return !ownerOnlyAccess || clientId == LogicalOwnerClientId.Value;
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void DepositEquippedToBagServerRpc(ulong playerNetId, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server,InvokePermission = RpcInvokePermission.Everyone)]
+    public void DepositEquippedToBagServerRpc(ulong playerNetId, RpcParams rpcParams = default)
     {
         ulong sender = rpcParams.Receive.SenderClientId;
         if (!CanAccess(sender)) return;
@@ -87,8 +87,8 @@ public class NetworkGolfBag : NetworkBehaviour
         equip.equippedClubId.Value = 0;
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void EquipFromBagServerRpc(ulong playerNetId, int index, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server,InvokePermission = RpcInvokePermission.Everyone)]
+    public void EquipFromBagServerRpc(ulong playerNetId, int index, RpcParams rpcParams = default)
     {
         ulong sender = rpcParams.Receive.SenderClientId;
         if (!CanAccess(sender)) return;

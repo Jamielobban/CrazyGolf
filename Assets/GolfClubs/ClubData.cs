@@ -8,6 +8,15 @@ public class ClubData : ScriptableObject
     public Sprite icon;
     public string shortName;
 
+    [Header("Stance / Lock offsets")]
+    public float stanceBackOffset = 1.2f; 
+    public float stanceSideOffset = 0.35f;  
+
+    [Header("Swing camera targets (local to player)")]
+    public Vector3 swingHitPointLocal = new Vector3(0f, 1.3f, 1.0f);
+    public Vector3 swingFollowLocal   = new Vector3(0f, 1.6f, 0f); 
+    public float swingFov = 55f; // optional if you want per club
+
     public GameObject heldPrefab;
     public GameObject worldPrefab; 
 

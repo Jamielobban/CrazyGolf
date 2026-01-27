@@ -7,6 +7,11 @@ public class SwingLockOrbitNet : NetworkBehaviour
     [Header("References (same Player object)")]
     [SerializeField] private GolferContextLink ctx;
     [SerializeField] private Rigidbody rb;
+    [SerializeField] private NetworkRigidbodyPlayer move;
+    [SerializeField] private PlayerInputGate gate;
+    private Collider clubHeadColliderServer;
+    [SerializeField] private float clubheadDisableGrace = 0.25f;
+    private float reenableClubheadAtServer = -1f;
 
     [Header("Snap Offsets (meters) - FOR CLUBHEAD TARGET")]
     [SerializeField] private float backOffset = 1.2f;
@@ -21,10 +26,6 @@ public class SwingLockOrbitNet : NetworkBehaviour
     [Header("Facing")]
     [SerializeField] private bool faceBall = true;
     [SerializeField] private int tangentSign = +1;
-
-    [Header("Owner Input (keys for now)")]
-    [SerializeField] private KeyCode leftKey = KeyCode.A;
-    [SerializeField] private KeyCode rightKey = KeyCode.D;
 
     [Header("Networking")]
     [SerializeField] private float orbitSendRateHz = 30f;
@@ -74,10 +75,15 @@ public class SwingLockOrbitNet : NetworkBehaviour
         if (!IsOwner) return;
 
         lockedClient = false;
+        orbitInputServer = 0f;
+
+        if (clubHeadColliderServer != null)
+            clubHeadColliderServer.enabled = true;
+            
         EndSwingServerRpc();
 
-        // allow locomotion again (walk / slow-walk etc.)
         var move = GetComponent<NetworkRigidbodyPlayer>();
+        
         if (move != null)
             move.SetServerLocomotionEnabledServerRpc(true);
     }
@@ -87,9 +93,11 @@ public class SwingLockOrbitNet : NetworkBehaviour
         if (!IsOwner) return;
         if (!lockedClient) return;
 
-        float input = 0f;
-        if (Input.GetKey(leftKey)) input -= 1f;
-        if (Input.GetKey(rightKey)) input += 1f;
+        float input = move != null ? move.OrbitAxis : 0f;
+        Debug.Log(input);
+
+        if (gate != null && !gate.AllowOrbit) input = 0f;
+        Debug.Log("gate passed");
         input = Mathf.Clamp(input, -1f, 1f);
 
         float now = Time.time;
@@ -136,8 +144,8 @@ public class SwingLockOrbitNet : NetworkBehaviour
 
     // ----- server rpc -----
 
-    [ServerRpc(RequireOwnership = true)]
-    private void BeginSwingServerRpc(Vector3 centerWorldPos, Vector3 playerForward, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    private void BeginSwingServerRpc(Vector3 centerWorldPos, Vector3 playerForward, RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId)
             return;
@@ -157,6 +165,7 @@ public class SwingLockOrbitNet : NetworkBehaviour
 
         if (!ctx) ctx = GetComponent<GolferContextLink>();
         clubHeadServer = (ctx != null) ? ctx.ClubHead : null;
+        clubHeadColliderServer = clubHeadServer.GetComponent<Collider>();
 
         if (clubHeadServer == null)
         {
@@ -194,12 +203,14 @@ public class SwingLockOrbitNet : NetworkBehaviour
 
         lockedServer = true;
 
+        clubHeadColliderServer.enabled = false;
+        reenableClubheadAtServer = Time.time + clubheadDisableGrace;
         ApplyPoseServer();
         ReplyLockResultToOwner(true);
     }
 
-    [ServerRpc(RequireOwnership = true)]
-    private void EndSwingServerRpc(ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    private void EndSwingServerRpc(RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId)
             return;
@@ -207,11 +218,14 @@ public class SwingLockOrbitNet : NetworkBehaviour
         lockedServer = false;
         orbitInputServer = 0f;
 
+        if (clubHeadColliderServer != null)
+            clubHeadColliderServer.enabled = true;
+
         ReplyLockResultToOwner(false);
     }
 
-    [ServerRpc(Delivery = RpcDelivery.Unreliable, RequireOwnership = true)]
-    private void OrbitInputServerRpc(float input01, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server,Delivery = RpcDelivery.Unreliable,InvokePermission = RpcInvokePermission.Owner)]
+    private void OrbitInputServerRpc(float input01, RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId)
             return;
@@ -225,6 +239,10 @@ public class SwingLockOrbitNet : NetworkBehaviour
     private void FixedUpdate()
     {
         if (!IsServer) return;
+
+        if (clubHeadColliderServer != null && !clubHeadColliderServer.enabled && Time.time >= reenableClubheadAtServer)
+            clubHeadColliderServer.enabled = true;
+
         if (!lockedServer) return;
 
         if (Time.time - lastOrbitInputRecvTimeServer > orbitInputTimeout)
@@ -293,4 +311,26 @@ public class SwingLockOrbitNet : NetworkBehaviour
         Vector3 clubWorldFromRoot = m.MultiplyVector(clubHeadLocalFromRootServer);
         return clubTargetPos - clubWorldFromRoot;
     }
+
+    public void BeginSwing(Vector3 centerWorldPos, Vector3 playerForward, float back, float side)
+    {
+        backOffset = back;
+        sideOffset = side;
+        BeginSwing(centerWorldPos, playerForward);
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    public void EnableClubheadColliderServerRpc()
+    {
+        if (!lockedServer) return;
+        if (clubHeadColliderServer != null)
+            clubHeadColliderServer.enabled = true;
+    }
+    // tune -> driver longer, harder anti park, higher curve capacity
+    // iron -> more static, higher loft capacity
+    // putter -> completely static, straight line pretty much
+    // what changes between these actual clubs can i do? 
+    // i should do 3 courses, 1 for driver, 1 for iron, 1 for putter
+
+    // putter needs ot be mostly straight feel no curve no lift, mostly just ong rass going foward. 
 }

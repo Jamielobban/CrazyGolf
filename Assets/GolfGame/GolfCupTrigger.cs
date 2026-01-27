@@ -17,8 +17,8 @@ public class GolfCupTrigger : NetworkBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (!IsServer) return;
-
-        var ball = other.GetComponentInParent<NetworkGolfBall>();
+        Debug.Log(other.gameObject);
+        var ball = other.GetComponent<NetworkGolfBall>();
         if (!ball) return;
 
         // server-side stop check (uses your ball logic)

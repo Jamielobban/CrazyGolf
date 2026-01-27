@@ -15,6 +15,11 @@ MonoBehaviour:
   clubName: Iron
   icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
   shortName: 
+  stanceBackOffset: 0
+  stanceSideOffset: 0.12
+  swingHitPointLocal: {x: -0.07, y: -0.885, z: 2.171}
+  swingFollowLocal: {x: 0, y: 1.02, z: 0.74}
+  swingFov: 55
   heldPrefab: {fileID: 4200646916718582470, guid: 95ae20b0fdc933c43b02ca0bb31fd25a, type: 3}
   worldPrefab: {fileID: 4200646916718582470, guid: 0e332a805b4db2f4289acb5df4d92ea2, type: 3}
   yawSpeed: 7
@@ -72,8 +77,8 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 0.7319135
-      value: 0.31018618
+      time: 0.56272405
+      value: 0.38879946
       inSlope: 1.4261922
       outSlope: 1.4261922
       tangentMode: 0
@@ -92,7 +97,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  minImpulse: 0.1
+  minImpulse: 1
   maxImpulse: 24
   curveMaxAbs: 0.35
   curveEffectiveness: 0.85

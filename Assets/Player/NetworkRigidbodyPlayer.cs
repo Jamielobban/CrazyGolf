@@ -66,6 +66,14 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
     public NetworkVariable<Quaternion> NetAimRotation =
         new(Quaternion.identity, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+    //INPUT GATES
+    private float peekAxis;
+    private float orbitAxis;
+    private PlayerInputGate gate;
+
+    public float PeekAxis => peekAxis;
+    public float OrbitAxis => orbitAxis;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -77,12 +85,14 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
         {
             interactor = GetComponent<Interactor>();
             held = GetComponent<PlayerHeldController>();
+            gate = GetComponent<PlayerInputGate>();
 
             input = new PlayerInputActions();
             input.Enable();
 
             input.Player.Move.performed += ctx => moveInputOwner = ctx.ReadValue<Vector2>();
             input.Player.Move.canceled  += _   => moveInputOwner = Vector2.zero;
+            
             input.Player.Interact.performed += _ =>
             {
                 interactor.TryTapUse();
@@ -92,9 +102,25 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
             {
                 interactor.TryHoldInteract();
             };
-            input.Player.Drop.performed += _ => held.Drop();
-            input.Player.HoldDrop.performed += _ => held.Throw(1f);
+            
+            input.Player.Drop.performed += _ =>
+            {
+                if (gate != null && !gate.AllowDrop) return;
+                held.Drop();
+            };
 
+            input.Player.HoldDrop.performed += _ =>
+            {
+                if (gate != null && !gate.AllowDrop) return;
+                held.Throw(1f);
+            };
+
+            input.Player.PeekAxis.performed += ctx => peekAxis = ctx.ReadValue<float>();
+            input.Player.PeekAxis.canceled  += _   => peekAxis = 0f;
+
+            input.Player.OrbitAxis.performed += ctx => orbitAxis = ctx.ReadValue<float>();
+            input.Player.OrbitAxis.canceled  += _   => orbitAxis = 0f;
+            
             SpawnLocalCameraRigIfNeeded();
 
             Cursor.lockState = CursorLockMode.Locked;
@@ -172,6 +198,7 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
         float yaw = e.y;
         NetAimRotation.Value = Quaternion.Euler(pitch, yaw, 0f);
+       // Debug.Log(OrbitAxis + " , " + orbitAxis);
     }
 
     private void Update()
@@ -205,8 +232,8 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
         }
     }
 
-    [ServerRpc(Delivery = RpcDelivery.Unreliable, RequireOwnership = true)]
-    private void SendInputServerRpc(Vector2 inputValue, float yaw, bool hasYaw, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server,Delivery = RpcDelivery.Unreliable,InvokePermission = RpcInvokePermission.Owner)]
+    private void SendInputServerRpc(Vector2 inputValue, float yaw, bool hasYaw, RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId)
             return;
@@ -220,8 +247,8 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
 
     // ---- Server control from stance/orbit ----
 
-    [ServerRpc(RequireOwnership = true)]
-    public void SetServerMovementEnabledServerRpc(bool enabled, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    public void SetServerMovementEnabledServerRpc(bool enabled, RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId)
             return;
@@ -229,8 +256,8 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
         serverMovementEnabled = enabled;
     }
 
-    [ServerRpc(RequireOwnership = true)]
-    public void SetServerLocomotionEnabledServerRpc(bool enabled, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    public void SetServerLocomotionEnabledServerRpc(bool enabled, RpcParams rpcParams = default)
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId)
             return;

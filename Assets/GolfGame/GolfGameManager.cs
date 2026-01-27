@@ -10,7 +10,15 @@ public class GolfGameManager : MonoBehaviour
     [SerializeField] private NetworkObject golfBagPrefab;
 
     [Header("Spawn Points (optional)")]
-    [SerializeField] private Transform[] teeSpawns;
+    [SerializeField] private Transform teeRoot;
+
+    private static readonly Vector3[] teeOffsets =
+    {
+        new Vector3(0f, 0f, 0f),
+        new Vector3(1.5f, 0f, 0f),
+        new Vector3(-1.5f, 0f, 0f),
+        new Vector3(0f, 0f, -2f),
+    };
 
     private readonly Dictionary<ulong, NetworkObject> ballByClient = new();
     private readonly Dictionary<ulong, NetworkObject> rigByClient  = new();
@@ -179,12 +187,12 @@ public class GolfGameManager : MonoBehaviour
 
     private Vector3 GetSpawnPosForClient(ulong clientId)
     {
-        // 1) teeSpawns if provided
-        if (teeSpawns != null && teeSpawns.Length > 0)
+        // 1) teeRoot + per-player offset
+        if (teeRoot != null)
         {
-            int idx = (int)(clientId % (ulong)teeSpawns.Length);
-            if (teeSpawns[idx] != null)
-                return teeSpawns[idx].position;
+            int idx = (int)(clientId % (ulong)teeOffsets.Length);
+            Vector3 offsetWorld = teeRoot.rotation * teeOffsets[idx];
+            return teeRoot.position + offsetWorld;
         }
 
         // 2) fallback: near player
@@ -195,7 +203,7 @@ public class GolfGameManager : MonoBehaviour
             return t.position + t.forward * 5f;
         }
 
-        // 3) last resort: origin
+        // 3) last resort
         return Vector3.zero;
     }
 
@@ -239,8 +247,10 @@ public class GolfGameManager : MonoBehaviour
         // OPTIONAL: store logical owner id on the bag script
         var bag = bagNO.GetComponent<NetworkGolfBag>();
         if (bag != null)
+        {
             bag.LogicalOwnerClientId.Value = clientId;
             AssignBagIdToPlayer(clientId, bagNO.NetworkObjectId);
+        }
 
         bagByClient[clientId] = bagNO;
     }
@@ -256,5 +266,49 @@ public class GolfGameManager : MonoBehaviour
         if (player != null)
             player.SetMyBagIdServer(bagId);
     }
-    //so i cant child it under a parent without it having a NO. so in theory i server drive the positions to match?
+
+    public void StartHoleServer()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || !nm.IsServer)
+        {
+            Debug.LogWarning("[GolfGameManager] StartHoleServer called but I'm not server.");
+            return;
+        }
+
+        TeleportPlayersToTees();
+        // ResetBalls();
+        // ResetBags();
+    }
+
+    private void TeleportPlayersToTees()
+    {
+        var nm = NetworkManager.Singleton;
+        if (!nm || !nm.IsServer) return;
+        if (teeRoot == null)
+        {
+            Debug.LogWarning("[GolfGameManager] teeRoot is null, can't teleport.");
+            return;
+        }
+
+        foreach (var kv in nm.ConnectedClients)
+        {
+            ulong clientId = kv.Key;
+            var playerObj = kv.Value.PlayerObject;
+            if (!playerObj) continue;
+
+            int idx = (int)(clientId % (ulong)teeOffsets.Length);
+            Vector3 pos = teeRoot.position + (teeRoot.rotation * teeOffsets[idx]);
+            Quaternion rot = teeRoot.rotation;
+
+            playerObj.transform.SetPositionAndRotation(pos, rot);
+
+            var rb = playerObj.GetComponent<Rigidbody>();
+            if (rb)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+    }
 }

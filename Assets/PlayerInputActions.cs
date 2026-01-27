@@ -163,6 +163,24 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PeekAxis"",
+                    ""type"": ""Value"",
+                    ""id"": ""c6f5e389-989c-45b2-bc5f-fd56b776eb38"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""OrbitAxis"",
+                    ""type"": ""Value"",
+                    ""id"": ""d08fbfe9-e84b-48e6-81a5-0ed1100d7649"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -297,6 +315,72 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""action"": ""HoldDrop"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""b4e31507-73d9-4439-9f31-0df191faa6fb"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PeekAxis"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""32128049-bfb5-4a3f-80a9-eb31841d3eb4"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PeekAxis"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""eb2a555d-cbf2-45e1-8a68-5269a77fa7e7"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PeekAxis"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""f44bdd50-a912-40c0-84c5-6dc17ad45c6e"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""OrbitAxis"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""34469a44-335e-4347-a6c3-00e8e8ac0981"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""OrbitAxis"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""b42a05ce-263e-44da-b50a-8056d8ca30eb"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""OrbitAxis"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
                 }
             ]
         }
@@ -313,6 +397,8 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_HoldInteract = m_Player.FindAction("HoldInteract", throwIfNotFound: true);
         m_Player_Drop = m_Player.FindAction("Drop", throwIfNotFound: true);
         m_Player_HoldDrop = m_Player.FindAction("HoldDrop", throwIfNotFound: true);
+        m_Player_PeekAxis = m_Player.FindAction("PeekAxis", throwIfNotFound: true);
+        m_Player_OrbitAxis = m_Player.FindAction("OrbitAxis", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -401,6 +487,8 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_HoldInteract;
     private readonly InputAction m_Player_Drop;
     private readonly InputAction m_Player_HoldDrop;
+    private readonly InputAction m_Player_PeekAxis;
+    private readonly InputAction m_Player_OrbitAxis;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -444,6 +532,14 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/HoldDrop".
         /// </summary>
         public InputAction @HoldDrop => m_Wrapper.m_Player_HoldDrop;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/PeekAxis".
+        /// </summary>
+        public InputAction @PeekAxis => m_Wrapper.m_Player_PeekAxis;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/OrbitAxis".
+        /// </summary>
+        public InputAction @OrbitAxis => m_Wrapper.m_Player_OrbitAxis;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -494,6 +590,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @HoldDrop.started += instance.OnHoldDrop;
             @HoldDrop.performed += instance.OnHoldDrop;
             @HoldDrop.canceled += instance.OnHoldDrop;
+            @PeekAxis.started += instance.OnPeekAxis;
+            @PeekAxis.performed += instance.OnPeekAxis;
+            @PeekAxis.canceled += instance.OnPeekAxis;
+            @OrbitAxis.started += instance.OnOrbitAxis;
+            @OrbitAxis.performed += instance.OnOrbitAxis;
+            @OrbitAxis.canceled += instance.OnOrbitAxis;
         }
 
         /// <summary>
@@ -529,6 +631,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @HoldDrop.started -= instance.OnHoldDrop;
             @HoldDrop.performed -= instance.OnHoldDrop;
             @HoldDrop.canceled -= instance.OnHoldDrop;
+            @PeekAxis.started -= instance.OnPeekAxis;
+            @PeekAxis.performed -= instance.OnPeekAxis;
+            @PeekAxis.canceled -= instance.OnPeekAxis;
+            @OrbitAxis.started -= instance.OnOrbitAxis;
+            @OrbitAxis.performed -= instance.OnOrbitAxis;
+            @OrbitAxis.canceled -= instance.OnOrbitAxis;
         }
 
         /// <summary>
@@ -625,5 +733,19 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnHoldDrop(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "PeekAxis" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPeekAxis(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "OrbitAxis" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnOrbitAxis(InputAction.CallbackContext context);
     }
 }

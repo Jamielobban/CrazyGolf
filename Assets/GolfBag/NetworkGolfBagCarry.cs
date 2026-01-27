@@ -191,8 +191,8 @@ public class NetworkGolfBagCarry : NetworkBehaviour
     // -------------------------
     // RPCs
     // -------------------------
-    [ServerRpc(RequireOwnership = false)]
-    public void RequestHoldServerRpc(ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server,InvokePermission = RpcInvokePermission.Everyone)]
+    public void RequestHoldServerRpc(RpcParams rpcParams = default)
     {
         ulong sender = rpcParams.Receive.SenderClientId;
 
@@ -203,8 +203,8 @@ public class NetworkGolfBagCarry : NetworkBehaviour
         ApplyPhysicsServer();
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void RequestDropServerRpc(Vector3 dropVel, Vector3 dropAngVel, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server,InvokePermission = RpcInvokePermission.Everyone)]
+    public void RequestDropServerRpc(Vector3 dropVel, Vector3 dropAngVel, RpcParams rpcParams = default)
     {
         ulong sender = rpcParams.Receive.SenderClientId;
 

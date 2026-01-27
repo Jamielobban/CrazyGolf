@@ -107,13 +107,13 @@ public class NetworkGolferPlayer : NetworkBehaviour
     }
 
     // === Server: hit a specific ball by NetworkObjectId ===
-    [ServerRpc]
+    [Rpc(SendTo.Server)]
     private void RequestHitBallByIdServerRpc(
         ulong ballNetId,
         Vector3 dir,
         float power01,
         float curve01,
-        ServerRpcParams rpcParams = default)
+        RpcParams rpcParams = default)
     {
         ulong senderId = rpcParams.Receive.SenderClientId;
 
