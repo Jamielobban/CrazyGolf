@@ -3,8 +3,6 @@ using UnityEngine;
 
 public static class GameSignals
 {
-
-
     // clientId, strokes
     public static event Action<ulong, int> StrokeCountChanged;
     public static void RaiseStrokeCountChanged(ulong clientId, int strokes)
@@ -25,6 +23,7 @@ public static class GameSignals
 
     public static event System.Action BagOpened;
     public static event System.Action BagClosed;
+
 
     public static void RaiseBagOpened() => BagOpened?.Invoke();
     public static void RaiseBagClosed() => BagClosed?.Invoke();

@@ -47,6 +47,7 @@ public class SwingPivotMouseRotate : NetworkBehaviour
     public float CurrentPitchOffset => pitchOffset;
 
     private GolferContextLink link;
+    private bool baseRotationProvided;
 
     void Awake()
     {
@@ -55,12 +56,22 @@ public class SwingPivotMouseRotate : NetworkBehaviour
 
     public void BeginSwing()
     {
+        //baseRotationProvided = false;
         isSwinging = true;
         if (!swingPivot) return;
 
         ResolveAndApplyClubData();
 
-        baseLocalRotation = swingPivot.localRotation;
+        if (!baseRotationProvided)
+        {
+            baseLocalRotation = swingPivot.localRotation;
+            Debug.Log($"[SwingPivot] fallback base={baseLocalRotation.eulerAngles}");
+        }
+        else
+        {
+            Debug.Log($"[SwingPivot] provided base={baseLocalRotation.eulerAngles}");
+        }
+
         yawOffset = 0f;
         pitchOffset = 0f;
 
@@ -76,6 +87,7 @@ public class SwingPivotMouseRotate : NetworkBehaviour
 
         swingPivot.localRotation = baseLocalRotation;
         catchupTimer = 0f;
+        baseRotationProvided = false; 
     }
 
     private void ResolveAndApplyClubData()
@@ -187,5 +199,11 @@ public class SwingPivotMouseRotate : NetworkBehaviour
     {
         // fallback (old input manager)
         return new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
+    }
+
+    public void SetBaseLocalRotation(Quaternion baseRot)
+    {
+        baseLocalRotation = baseRot;
+        baseRotationProvided = true;
     }
 }

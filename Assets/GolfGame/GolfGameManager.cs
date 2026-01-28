@@ -15,9 +15,9 @@ public class GolfGameManager : MonoBehaviour
     private static readonly Vector3[] teeOffsets =
     {
         new Vector3(0f, 0f, 0f),
-        new Vector3(1.5f, 0f, 0f),
-        new Vector3(-1.5f, 0f, 0f),
-        new Vector3(0f, 0f, -2f),
+        new Vector3(2.5f, 0f, 0f),
+        new Vector3(-2.5f, 0f, 0f),
+        new Vector3(0f, 0f, -3f),
     };
 
     private readonly Dictionary<ulong, NetworkObject> ballByClient = new();

@@ -302,7 +302,7 @@ TrailRenderer:
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 0.25502586
+        value: 0.07478905
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -310,8 +310,8 @@ TrailRenderer:
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
-        time: 0.8171157
-        value: 0.1477918
+        time: 0.81974024
+        value: 0.03733343
         inSlope: -0.22817843
         outSlope: -0.22817843
         tangentMode: 0

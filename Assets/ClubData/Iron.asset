@@ -19,7 +19,7 @@ MonoBehaviour:
   stanceSideOffset: 0.12
   swingHitPointLocal: {x: -0.07, y: -0.885, z: 2.171}
   swingFollowLocal: {x: 0, y: 1.02, z: 0.74}
-  swingFov: 55
+  swingPlaneEuler: {x: 28, y: 0, z: 0}
   heldPrefab: {fileID: 4200646916718582470, guid: 95ae20b0fdc933c43b02ca0bb31fd25a, type: 3}
   worldPrefab: {fileID: 4200646916718582470, guid: 0e332a805b4db2f4289acb5df4d92ea2, type: 3}
   yawSpeed: 7
@@ -60,31 +60,22 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  loftDeg: 30
-  minLaunchDeg: 15
+  loftDeg: 45
+  minLaunchDeg: 40
   maxLaunchDeg: 65
-  speedForFullPower: 12
+  speedForFullPower: 24
   powerCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
-      time: 0
+      time: -0.001497006
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: 0.42452338
+      outSlope: 0.42452338
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.56272405
-      value: 0.38879946
-      inSlope: 1.4261922
-      outSlope: 1.4261922
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
+      outWeight: 0.07473841
     - serializedVersion: 3
       time: 1
       value: 1

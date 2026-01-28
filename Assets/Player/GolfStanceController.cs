@@ -22,6 +22,7 @@ public class GolfStanceController : NetworkBehaviour
     [SerializeField] private Transform swingFollow;
     [SerializeField] private Transform walkLookPoint;
     [SerializeField] private Transform hitPoint;
+    [SerializeField] private Transform swingPlane;
 
     [Header("Blend Times")]
     [SerializeField] private float walkToSwingBlend = 0.25f;
@@ -90,48 +91,53 @@ public class GolfStanceController : NetworkBehaviour
     }
 
     private void EnterSwing()
-{
-    stance = Stance.Swing;
-    if (gate != null) gate.inSwing = true;
+        {
+        stance = Stance.Swing;
+        if (gate != null) gate.inSwing = true;
 
-    if (grip)
-        grip.SetFollowBodyAnchor();
+        if (grip)
+            grip.SetFollowBodyAnchor();
 
-    movement?.HoldYawFor(walkToSwingBlend);
+        movement?.HoldYawFor(walkToSwingBlend);
 
-    if (movement)
-    {
-        movement.SetYawEnabled(false);                
-        movement.SetServerMovementEnabledServerRpc(false); // slow-walk
-        movement.SetServerLocomotionEnabledServerRpc(true); // keep locomotion unless lock succeeds
+        if (movement)
+        {
+            movement.SetYawEnabled(false);                
+            movement.SetServerMovementEnabledServerRpc(false); // slow-walk
+            movement.SetServerLocomotionEnabledServerRpc(true); // keep locomotion unless lock succeeds
+        }
+        var cd = GetEquippedClubData();
+
+        if(cd != null && swingPivotDriver != null)
+        {
+            swingPivotDriver.SetBaseLocalRotation(cd.swingPlaneRotation);
+        }
+
+        swingPivotDriver?.BeginSwing();
+
+        if (cd != null)
+        {
+            if (hitPoint)   hitPoint.localPosition   = cd.swingHitPointLocal;
+            if (swingFollow) swingFollow.localPosition = cd.swingFollowLocal;
+        }
+
+        if (rig)
+        {
+            Transform follow = swingFollow ? swingFollow : fpsFollow;
+            rig.BindSwing(follow, hitPoint);
+            rig.SetModeSwing(true);
+        }
+
+        if (swingLockOrbit != null)
+        {
+            Vector3 centerWorld = GetSwingCenterWorld();
+            Vector3 refForward = GetSwingReferenceForward();
+            float back = cd ? cd.stanceBackOffset : 1.2f;
+            float side = cd ? cd.stanceSideOffset : 0.35f;
+
+            swingLockOrbit.BeginSwing(centerWorld, refForward, back, side);
+        }
     }
-
-    swingPivotDriver?.BeginSwing();
-
-    var cd = GetEquippedClubData();
-    if (cd != null)
-    {
-        if (hitPoint)   hitPoint.localPosition   = cd.swingHitPointLocal;
-        if (swingFollow) swingFollow.localPosition = cd.swingFollowLocal;
-    }
-
-    if (rig)
-    {
-        Transform follow = swingFollow ? swingFollow : fpsFollow;
-        rig.BindSwing(follow, hitPoint);
-        rig.SetModeSwing(true);
-    }
-
-    if (swingLockOrbit != null)
-    {
-        Vector3 centerWorld = GetSwingCenterWorld();
-        Vector3 refForward = GetSwingReferenceForward();
-        float back = cd ? cd.stanceBackOffset : 1.2f;
-        float side = cd ? cd.stanceSideOffset : 0.35f;
-
-        swingLockOrbit.BeginSwing(centerWorld, refForward, back, side);
-    }
-}
 
 private void ExitSwing()
 {

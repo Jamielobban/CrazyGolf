@@ -15,8 +15,11 @@ public class ClubData : ScriptableObject
     [Header("Swing camera targets (local to player)")]
     public Vector3 swingHitPointLocal = new Vector3(0f, 1.3f, 1.0f);
     public Vector3 swingFollowLocal   = new Vector3(0f, 1.6f, 0f); 
-    public float swingFov = 55f; // optional if you want per club
+    [Header("Swing Plane")]
+public Vector3 swingPlaneEuler;   // editable in inspector (degrees)
+public Quaternion swingPlaneRotation => Quaternion.Euler(swingPlaneEuler);
 
+    [Header("Prefabs")]
     public GameObject heldPrefab;
     public GameObject worldPrefab; 
 
