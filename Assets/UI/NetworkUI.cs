@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using System.Collections;
 
 public class NetworkUI : MonoBehaviour
 {
@@ -8,8 +9,7 @@ public class NetworkUI : MonoBehaviour
         NetworkManager.Singleton.StartHost();
 
         var match = FindFirstObjectByType<GolfMatchNet>();
-        if (match != null)
-            match.RequestStartHole();
+        StartCoroutine(StartHoleWhenReady());
     }
 
     public void StartClient()
@@ -22,5 +22,21 @@ public class NetworkUI : MonoBehaviour
     {
         NetworkManager.Singleton.StartServer();
         //Debug.Log("Started SERVER");
+    }
+
+    private IEnumerator StartHoleWhenReady()
+    {
+        var nm = NetworkManager.Singleton;
+
+        while (nm == null || !nm.IsServer)
+            yield return null;
+
+        // Wait for host player object
+        while (nm.LocalClient == null || nm.LocalClient.PlayerObject == null)
+            yield return null;
+
+        var match = FindFirstObjectByType<GolfMatchNet>();
+        if (match != null)
+            match.RequestStartHole();
     }
 }

@@ -21,44 +21,42 @@ public class GolfGameManager : MonoBehaviour
     };
 
     private readonly Dictionary<ulong, NetworkObject> ballByClient = new();
-    private readonly Dictionary<ulong, NetworkObject> rigByClient  = new();
+    private readonly Dictionary<ulong, NetworkObject> rigByClient = new();
     private readonly Dictionary<ulong, NetworkObject> bagByClient = new();
+
+    private bool hooked;
 
     private void OnEnable()
     {
-        StartCoroutine(HookWhenReady());
+        StartCoroutine(HookWhenServerReady());
     }
 
-    private IEnumerator HookWhenReady()
+    private IEnumerator HookWhenServerReady()
     {
-        // Wait until NetworkManager exists
+        // 1) Wait for NetworkManager to exist
         while (NetworkManager.Singleton == null)
             yield return null;
 
         var nm = NetworkManager.Singleton;
 
+        // 2) Wait until we are actually the server/host
+        while (!nm.IsServer)
+            yield return null;
+
+        // 3) Hook only once
+        if (hooked) yield break;
+        hooked = true;
+
         nm.OnClientConnectedCallback += OnClientConnected;
         nm.OnClientDisconnectCallback += OnClientDisconnected;
 
-        // If host/server already started, spawn for already-connected clients
-        if (nm.IsServer)
+        // 4) Spawn for anyone already connected (host counts too)
+        foreach (var kv in nm.ConnectedClients)
         {
-            foreach (var kv in nm.ConnectedClients)
-            {
-                ulong clientId = kv.Key;
-
-                EnsureBallForClient(clientId);
-                EnsureRigForClient(clientId);
-                EnsureBagForClient(clientId);
-
-                // equip default for already-connected clients too
-                var client = kv.Value;
-                if (client.PlayerObject)
-                {
-                    var player = client.PlayerObject.GetComponent<NetworkClubEquipment>();
-                    if (player) player.equippedClubId.Value = 0;
-                }
-            }
+            ulong clientId = kv.Key;
+            EnsureRigForClient(clientId);
+            EnsureBagForClient(clientId);
+            EnsureBallForClient(clientId);
         }
     }
 
@@ -69,6 +67,8 @@ public class GolfGameManager : MonoBehaviour
 
         nm.OnClientConnectedCallback -= OnClientConnected;
         nm.OnClientDisconnectCallback -= OnClientDisconnected;
+
+        hooked = false;
     }
 
     private void OnClientConnected(ulong clientId)
@@ -76,15 +76,9 @@ public class GolfGameManager : MonoBehaviour
         var nm = NetworkManager.Singleton;
         if (nm == null || !nm.IsServer) return;
 
-        EnsureBallForClient(clientId);
         EnsureRigForClient(clientId);
         EnsureBagForClient(clientId);
-
-        if (nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject)
-        {
-            var player = client.PlayerObject.GetComponent<NetworkClubEquipment>();
-            if (player) player.equippedClubId.Value = 0;
-        }
+        EnsureBallForClient(clientId);
     }
 
     private void OnClientDisconnected(ulong clientId)
@@ -92,35 +86,30 @@ public class GolfGameManager : MonoBehaviour
         var nm = NetworkManager.Singleton;
         if (nm == null || !nm.IsServer) return;
 
-        if (ballByClient.TryGetValue(clientId, out var ballNO) && ballNO != null)
-        {
-            if (ballNO.IsSpawned)
-                ballNO.Despawn(true);
+        DespawnForClient(clientId, ballByClient);
+        DespawnForClient(clientId, rigByClient);
+        DespawnForClient(clientId, bagByClient);
 
-            ballByClient.Remove(clientId);
-        }
-
-        if (rigByClient.TryGetValue(clientId, out var rigNO) && rigNO != null)
-        {
-            if (rigNO.IsSpawned)
-                rigNO.Despawn(true);
-
-            rigByClient.Remove(clientId);
-        }
-
-        if (bagByClient.TryGetValue(clientId, out var bagNO) && bagNO != null)
-        {
-            if (bagNO.IsSpawned)
-                bagNO.Despawn(true);
-            bagByClient.Remove(clientId);
-        }
-
-        // clear player's reference
+        // clear player's references (if player object still around)
         if (nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
         {
-            var player = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
-            if (player != null) player.SetMyBallIdServer(0);
+            var p = client.PlayerObject.GetComponent<NetworkGolferPlayer>();
+            if (p != null)
+            {
+                p.SetMyBallIdServer(0);
+                p.SetMyBagIdServer(0);
+            }
         }
+    }
+
+    private static void DespawnForClient(ulong clientId, Dictionary<ulong, NetworkObject> dict)
+    {
+        if (!dict.TryGetValue(clientId, out var no) || no == null) return;
+
+        if (no.IsSpawned)
+            no.Despawn(true);
+
+        dict.Remove(clientId);
     }
 
     private void EnsureBallForClient(ulong clientId)
@@ -141,22 +130,22 @@ public class GolfGameManager : MonoBehaviour
         }
 
         Vector3 pos = GetSpawnPosForClient(clientId);
-        Quaternion rot = Quaternion.identity;
-
-        var ballNO = Instantiate(golfBallPrefab, pos, rot);
+        var ballNO = Instantiate(golfBallPrefab, pos, Quaternion.identity);
         ballNO.Spawn();
 
-        var ball = ballNO.GetComponent<NetworkGolfBall>();
-        if (ball != null) ball.LogicalOwnerClientId = clientId;
+        // NEW: set ownership on BallState (not old NetworkGolfBall.LogicalOwnerClientId)
+        var st = ballNO.GetComponent<NetworkGolfBallState>();
+        if (st != null)
+        {
+            st.Mode.Value = NetworkGolfBallState.BallMode.Round;
+            st.LogicalOwnerClientId.Value = clientId;
+        }
 
         ballByClient[clientId] = ballNO;
-
         AssignBallIdToPlayer(clientId, ballNO.NetworkObjectId);
-
-        //Debug.Log($"[GolfGameManager] Spawned ball for client {clientId} at {pos}");
     }
 
-     private void EnsureRigForClient(ulong clientId)
+    private void EnsureRigForClient(ulong clientId)
     {
         var nm = NetworkManager.Singleton;
         if (nm == null || !nm.IsServer) return;
@@ -185,9 +174,37 @@ public class GolfGameManager : MonoBehaviour
         rigByClient[clientId] = rigNO;
     }
 
+    private void EnsureBagForClient(ulong clientId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || !nm.IsServer) return;
+
+        if (golfBagPrefab == null)
+        {
+            Debug.LogError("[GolfGameManager] golfBagPrefab not set.");
+            return;
+        }
+
+        if (bagByClient.TryGetValue(clientId, out var existing) && existing != null && existing.IsSpawned)
+        {
+            AssignBagIdToPlayer(clientId, existing.NetworkObjectId);
+            return;
+        }
+
+        Vector3 pos = GetSpawnPosForClient(clientId) + Vector3.right * 3.0f + Vector3.up * 2.0f;
+        var bagNO = Instantiate(golfBagPrefab, pos, Quaternion.identity);
+        bagNO.Spawn(); // server-owned (no ChangeOwnership)
+
+        var bag = bagNO.GetComponent<NetworkGolfBag>();
+        if (bag != null)
+            bag.LogicalOwnerClientId.Value = clientId;
+
+        bagByClient[clientId] = bagNO;
+        AssignBagIdToPlayer(clientId, bagNO.NetworkObjectId);
+    }
+
     private Vector3 GetSpawnPosForClient(ulong clientId)
     {
-        // 1) teeRoot + per-player offset
         if (teeRoot != null)
         {
             int idx = (int)(clientId % (ulong)teeOffsets.Length);
@@ -195,7 +212,6 @@ public class GolfGameManager : MonoBehaviour
             return teeRoot.position + offsetWorld;
         }
 
-        // 2) fallback: near player
         var nm = NetworkManager.Singleton;
         if (nm != null && nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
         {
@@ -203,7 +219,6 @@ public class GolfGameManager : MonoBehaviour
             return t.position + t.forward * 5f;
         }
 
-        // 3) last resort
         return Vector3.zero;
     }
 
@@ -220,44 +235,10 @@ public class GolfGameManager : MonoBehaviour
             player.SetMyBallIdServer(ballId);
     }
 
-    private void EnsureBagForClient(ulong clientId)
-    {
-        var nm = NetworkManager.Singleton;
-        if (nm == null || !nm.IsServer) return;
-
-        if (golfBagPrefab == null)
-        {
-            Debug.LogError("[GolfGameManager] golfBagPrefab not set.");
-            return;
-        }
-
-        if (bagByClient.TryGetValue(clientId, out var existing) && existing != null && existing.IsSpawned)
-            return;
-
-        // Spawn near player spawn
-        Vector3 pos = GetSpawnPosForClient(clientId) + Vector3.right * 3.0f + Vector3.up * 2.0f; // offset a bit
-        Quaternion rot = Quaternion.identity;
-
-        var bagNO = Instantiate(golfBagPrefab, pos, rot);
-        bagNO.Spawn();
-
-        // Make the bag owned by the client (so later you can gate access easily)
-        bagNO.ChangeOwnership(clientId);
-
-        // OPTIONAL: store logical owner id on the bag script
-        var bag = bagNO.GetComponent<NetworkGolfBag>();
-        if (bag != null)
-        {
-            bag.LogicalOwnerClientId.Value = clientId;
-            AssignBagIdToPlayer(clientId, bagNO.NetworkObjectId);
-        }
-
-        bagByClient[clientId] = bagNO;
-    }
     private void AssignBagIdToPlayer(ulong clientId, ulong bagId)
     {
         var nm = NetworkManager.Singleton;
-        if (!nm || !nm.IsServer) return;
+        if (nm == null || !nm.IsServer) return;
 
         if (!nm.ConnectedClients.TryGetValue(clientId, out var client)) return;
         if (client.PlayerObject == null) return;
@@ -270,38 +251,32 @@ public class GolfGameManager : MonoBehaviour
     public void StartHoleServer()
     {
         var nm = NetworkManager.Singleton;
-        if (nm == null || !nm.IsServer)
-        {
-            Debug.LogWarning("[GolfGameManager] StartHoleServer called but I'm not server.");
-            return;
-        }
+        if (nm == null || !nm.IsServer) return;
 
         TeleportPlayersToTees();
-        // ResetBalls();
-        // ResetBags();
     }
 
     private void TeleportPlayersToTees()
     {
         var nm = NetworkManager.Singleton;
         if (!nm || !nm.IsServer) return;
-        if (teeRoot == null)
-        {
-            Debug.LogWarning("[GolfGameManager] teeRoot is null, can't teleport.");
-            return;
-        }
+        if (!teeRoot) return;
 
         foreach (var kv in nm.ConnectedClients)
         {
             ulong clientId = kv.Key;
             var playerObj = kv.Value.PlayerObject;
-            if (!playerObj) continue;
+
+            if (!playerObj)
+            {
+                Debug.LogWarning($"[GolfGameManager] No PlayerObject yet for client {clientId}, skipping teleport.");
+                continue;
+            }
 
             int idx = (int)(clientId % (ulong)teeOffsets.Length);
             Vector3 pos = teeRoot.position + (teeRoot.rotation * teeOffsets[idx]);
-            Quaternion rot = teeRoot.rotation;
 
-            playerObj.transform.SetPositionAndRotation(pos, rot);
+            playerObj.transform.SetPositionAndRotation(pos, teeRoot.rotation);
 
             var rb = playerObj.GetComponent<Rigidbody>();
             if (rb)
