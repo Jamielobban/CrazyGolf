@@ -22,11 +22,11 @@ MonoBehaviour:
   swingPlaneEuler: {x: 45, y: 0, z: 0}
   heldPrefab: {fileID: 4200646916718582470, guid: d597e65745cc26d459937cec7dfd6314, type: 3}
   worldPrefab: {fileID: 4200646916718582470, guid: eb252431e9a38714b88fc1d92689ebcc, type: 3}
-  yawSpeed: 7
+  yawSpeed: 6
   pitchSpeed: 4
-  pitchMin: -80
-  pitchMax: 80
-  rotFollow: 65
+  pitchMin: -10
+  pitchMax: 0
+  rotFollow: 50
   invertY: 1
   enableCatchup: 0
   catchupBoost: 3.5

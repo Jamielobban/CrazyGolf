@@ -181,6 +181,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""DropBag"",
+                    ""type"": ""Button"",
+                    ""id"": ""32148842-0a83-4735-b4b4-d89aff8b123e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -381,6 +390,17 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""action"": ""OrbitAxis"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""47955121-cc4f-426a-ac36-0cecbc946fd0"",
+                    ""path"": ""<Keyboard>/g"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""DropBag"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -399,6 +419,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_HoldDrop = m_Player.FindAction("HoldDrop", throwIfNotFound: true);
         m_Player_PeekAxis = m_Player.FindAction("PeekAxis", throwIfNotFound: true);
         m_Player_OrbitAxis = m_Player.FindAction("OrbitAxis", throwIfNotFound: true);
+        m_Player_DropBag = m_Player.FindAction("DropBag", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -489,6 +510,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_HoldDrop;
     private readonly InputAction m_Player_PeekAxis;
     private readonly InputAction m_Player_OrbitAxis;
+    private readonly InputAction m_Player_DropBag;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -540,6 +562,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/OrbitAxis".
         /// </summary>
         public InputAction @OrbitAxis => m_Wrapper.m_Player_OrbitAxis;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/DropBag".
+        /// </summary>
+        public InputAction @DropBag => m_Wrapper.m_Player_DropBag;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -596,6 +622,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @OrbitAxis.started += instance.OnOrbitAxis;
             @OrbitAxis.performed += instance.OnOrbitAxis;
             @OrbitAxis.canceled += instance.OnOrbitAxis;
+            @DropBag.started += instance.OnDropBag;
+            @DropBag.performed += instance.OnDropBag;
+            @DropBag.canceled += instance.OnDropBag;
         }
 
         /// <summary>
@@ -637,6 +666,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @OrbitAxis.started -= instance.OnOrbitAxis;
             @OrbitAxis.performed -= instance.OnOrbitAxis;
             @OrbitAxis.canceled -= instance.OnOrbitAxis;
+            @DropBag.started -= instance.OnDropBag;
+            @DropBag.performed -= instance.OnDropBag;
+            @DropBag.canceled -= instance.OnDropBag;
         }
 
         /// <summary>
@@ -747,5 +779,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnOrbitAxis(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "DropBag" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDropBag(InputAction.CallbackContext context);
     }
 }

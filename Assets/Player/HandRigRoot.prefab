@@ -174,7 +174,7 @@ MonoBehaviour:
   posSpring: 200
   posDamping: 9
   maxSpeed: 15
-  rotLerp: 10
+  rotLerp: 25
   pitchClamp: 75
   bodyAnchor: {fileID: 0}
 --- !u!114 &975723930845287343

@@ -115,6 +115,12 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
                 held.Throw(1f);
             };
 
+            input.Player.DropBag.performed += _ =>
+            {
+                //if (gate != null && !gate.AllowDrop) return;
+                held.DropBagOnly();
+            };
+
             input.Player.PeekAxis.performed += ctx => peekAxis = ctx.ReadValue<float>();
             input.Player.PeekAxis.canceled  += _   => peekAxis = 0f;
 
@@ -230,6 +236,12 @@ public class NetworkRigidbodyPlayer : NetworkBehaviour
             if (hasYaw) lastYawSentToServer = yawToSend;
             nextSendTime = now + sendInterval;
         }
+
+        if (Input.GetKeyDown(KeyCode.J))
+            interactor.DebugBagDeposit();
+
+        if (Input.GetKeyDown(KeyCode.K))
+            interactor.DebugBagEquip();
     }
 
     [Rpc(SendTo.Server,Delivery = RpcDelivery.Unreliable,InvokePermission = RpcInvokePermission.Owner)]

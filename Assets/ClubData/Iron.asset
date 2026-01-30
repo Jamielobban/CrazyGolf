@@ -26,7 +26,7 @@ MonoBehaviour:
   pitchSpeed: 4
   pitchMin: -80
   pitchMax: 80
-  rotFollow: 45
+  rotFollow: 13
   invertY: 1
   enableCatchup: 0
   catchupBoost: 3.5

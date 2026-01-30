@@ -217,6 +217,7 @@ GameObject:
   - component: {fileID: 797064019939048379}
   - component: {fileID: 9212137560322079616}
   - component: {fileID: 3390964168090265444}
+  - component: {fileID: 8116343334487188140}
   m_Layer: 9
   m_Name: Main
   m_TagString: Untagged
@@ -242,6 +243,7 @@ Transform:
   - {fileID: 5023043409852423998}
   - {fileID: 3068920779213422748}
   - {fileID: 8054948783153967212}
+  - {fileID: 4172573994265893388}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &8160019401841307142
@@ -363,7 +365,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3120032765
+  GlobalObjectIdHash: 1052692653
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -530,6 +532,13 @@ MonoBehaviour:
   swingPivot: {fileID: 5359839411412287128}
   currentData: {fileID: 0}
   isSwinging: 0
+  debugFlip: 1
+  logCooldown: 0.25
+  debugRotJumps: 1
+  jumpDegrees: 45
+  jumpCooldown: 0.15
+  parentJumpDegrees: 45
+  baseDriftDegrees: 10
 --- !u!114 &4182380670424442734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -683,10 +692,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BagInteractor
   ShowTopMostFoldoutHeaderGroup: 1
-  cam: {fileID: 0}
-  dropForwardSpeed: 2
-  dropUpSpeed: 0.5
-  dropSpinYaw: 3
 --- !u!114 &4862434794709245143
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -731,7 +736,8 @@ MonoBehaviour:
   interactDist: 3
   interactMask:
     serializedVersion: 2
-    m_Bits: 1152
+    m_Bits: 3264
+  debugBagEquipIndex: 0
 --- !u!114 &9212137560322079616
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -768,6 +774,50 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInputGate
   uiOpen: 0
   inSwing: 0
+--- !u!114 &8116343334487188140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2617925885463999829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1e8825db9ce66c47bcc12b47098990c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerBallAnchor
+  anchor: {fileID: 4172573994265893388}
+--- !u!1 &3994854733209788385
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4172573994265893388}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4172573994265893388
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3994854733209788385}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.123999596, y: 0.7817602, z: 1.13}
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 556631326116474028}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4339547246322372314
 GameObject:
   m_ObjectHideFlags: 0

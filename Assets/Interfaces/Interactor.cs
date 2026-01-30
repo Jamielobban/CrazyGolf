@@ -10,6 +10,8 @@ public class Interactor : NetworkBehaviour
     public RaycastHit CurrentHit { get; private set; }
     public IUseable CurrentUseable { get; private set; }
 
+    [SerializeField] private int debugBagEquipIndex = 0;
+
     private void Update()
     {
         if (!IsOwner) return;
@@ -111,5 +113,22 @@ public class Interactor : NetworkBehaviour
             }
         }
         return best;
+    }
+
+    public void DebugBagDeposit()
+    {
+        if (!IsOwner) return;
+        if (CurrentUseable is BagUseable bag)
+            bag.DebugDeposit(this);
+
+        Debug.Log("Deposit");
+    }
+
+    public void DebugBagEquip()
+    {
+        if (!IsOwner) return;
+        if (CurrentUseable is BagUseable bag)
+            bag.DebugEquipIndex(this, debugBagEquipIndex);
+        Debug.Log("Equip");
     }
 }

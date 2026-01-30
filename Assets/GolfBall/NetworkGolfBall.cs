@@ -88,6 +88,8 @@ public class NetworkGolfBall : NetworkBehaviour
     private float launchCurveArea = 1f; // area under curve over [0..1]
     private float launchPrevCDF;        // cumulative fraction applied last frame [0..1]
 
+    public Rigidbody RB => rb;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();

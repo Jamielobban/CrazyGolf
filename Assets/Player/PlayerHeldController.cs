@@ -35,15 +35,15 @@ public class PlayerHeldController : NetworkBehaviour
         if (!IsOwner) return;
 
         // 1) Drop bag if I'm holding it
-        if (NetworkGolfBagCarry.TryGetHeldBag(OwnerClientId, out var bag))
-        {
-            if (!cam) return;
+        //if (NetworkGolfBagCarry.TryGetHeldBag(OwnerClientId, out var bag))
+        //{
+        //    if (!cam) return;
 
-            Vector3 vel = cam.transform.forward * bagDropForward + Vector3.up * bagDropUp;
-            Vector3 ang = Vector3.zero;
-            bag.RequestDropServerRpc(vel, ang);
-            return;
-        }
+        //    Vector3 vel = cam.transform.forward * bagDropForward + Vector3.up * bagDropUp;
+        //    Vector3 ang = Vector3.zero;
+        //    bag.RequestDropServerRpc(vel, ang);
+        //    return;
+        //}
 
         // 2) Otherwise drop equipped club (spawns world pickup)
         if (clubEquip != null && clubEquip.equippedClubId.Value != 0)
@@ -59,18 +59,18 @@ public class PlayerHeldController : NetworkBehaviour
         charge01 = Mathf.Clamp01(charge01);
 
         // 1) Throw bag if held
-        if (NetworkGolfBagCarry.TryGetHeldBag(OwnerClientId, out var bag))
-        {
-            float fwd = Mathf.Lerp(bagThrowForwardMin, bagThrowForwardMax, charge01);
-            float up  = Mathf.Lerp(bagThrowUpMin, bagThrowUpMax, charge01);
-            float spin= Mathf.Lerp(bagSpinMin, bagSpinMax, charge01);
+        //if (NetworkGolfBagCarry.TryGetHeldBag(OwnerClientId, out var bag))
+        //{
+        //    float fwd = Mathf.Lerp(bagThrowForwardMin, bagThrowForwardMax, charge01);
+        //    float up  = Mathf.Lerp(bagThrowUpMin, bagThrowUpMax, charge01);
+        //    float spin= Mathf.Lerp(bagSpinMin, bagSpinMax, charge01);
 
-            Vector3 vel = cam.transform.forward * fwd + Vector3.up * up;
-            Vector3 ang = new Vector3(0f, spin, 0f);
+        //    Vector3 vel = cam.transform.forward * fwd + Vector3.up * up;
+        //    Vector3 ang = new Vector3(0f, spin, 0f);
 
-            bag.RequestDropServerRpc(vel, ang);
-            return;
-        }
+        //    bag.RequestDropServerRpc(vel, ang);
+        //    return;
+        //}
 
         // 2) Otherwise throw equipped club (your charged RPC)
         if (clubEquip != null && clubEquip.equippedClubId.Value != 0)
@@ -87,5 +87,22 @@ public class PlayerHeldController : NetworkBehaviour
         bagCarry.RequestHoldServerRpc();
         cachedBag = bagCarry;
         return true;
+    }
+
+    public void DropBagOnly()
+    {
+        if (!IsOwner) return;
+        if (!cam) cam = Camera.main;
+        if (!cam) return;
+
+        Debug.Log("Drop bag only");
+        // Only affects bag. If no bag, do nothing.
+        if (!NetworkGolfBagCarry.TryGetHeldBag(OwnerClientId, out var bag))
+            return;
+
+        Debug.Log(bag.gameObject.name);
+        Vector3 vel = cam.transform.forward * bagDropForward + Vector3.up * bagDropUp;
+        Vector3 ang = Vector3.zero;
+        bag.RequestDropServerRpc(vel, ang);
     }
 }
