@@ -307,14 +307,6 @@ public class NetworkGolfBallState : NetworkBehaviour
         phys.HitServer(dir, impulse, curve01);
     }
 
-    // If you want clients to request hits (usually your club does a ServerRpc anyway)
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    public void RequestHitServerRpc(Vector3 dir, float impulse, float curve01, RpcParams rpcParams = default)
-    {
-        ulong sender = rpcParams.Receive.SenderClientId;
-        TryHitServer(sender, dir, impulse, curve01);
-    }
-
     private void ClearTeeOccupancyIfNeeded()
     {
         if (!IsServer) return;

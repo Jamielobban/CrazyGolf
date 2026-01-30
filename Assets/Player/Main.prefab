@@ -365,7 +365,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1052692653
+  GlobalObjectIdHash: 3120032765
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -460,8 +460,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   mineOnly: 1
-  minImpulse: 0.1
-  maxImpulse: 85
   clubDb: {fileID: 11400000, guid: b91fb0ff4d155be418c801430b88c6d2, type: 2}
   equipment: {fileID: 589703905635826597}
 --- !u!114 &2765047706870737222
@@ -532,13 +530,6 @@ MonoBehaviour:
   swingPivot: {fileID: 5359839411412287128}
   currentData: {fileID: 0}
   isSwinging: 0
-  debugFlip: 1
-  logCooldown: 0.25
-  debugRotJumps: 1
-  jumpDegrees: 45
-  jumpCooldown: 0.15
-  parentJumpDegrees: 45
-  baseDriftDegrees: 10
 --- !u!114 &4182380670424442734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -588,8 +579,6 @@ MonoBehaviour:
   move: {fileID: 2765047706870737222}
   gate: {fileID: 3390964168090265444}
   clubheadDisableGrace: 0.5
-  backOffset: 0
-  sideOffset: 0.12
   maxSnapDistance: 3
   orbitSpeedDegPerSec: 90
   faceBall: 0
@@ -754,12 +743,6 @@ MonoBehaviour:
   cam: {fileID: 0}
   bagDropForward: 1
   bagDropUp: 0.5
-  bagThrowForwardMin: 2
-  bagThrowForwardMax: 8
-  bagThrowUpMin: 0.8
-  bagThrowUpMax: 2.5
-  bagSpinMin: 2
-  bagSpinMax: 8
 --- !u!114 &3390964168090265444
 MonoBehaviour:
   m_ObjectHideFlags: 0

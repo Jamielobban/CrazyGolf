@@ -5,15 +5,9 @@ public class PlayerHeldController : NetworkBehaviour
 {
     [SerializeField] private Camera cam;
 
-     [Header("Bag throw")]
+    [Header("Bag throw")]
     [SerializeField] private float bagDropForward = 1.0f;
     [SerializeField] private float bagDropUp = 0.5f;
-    [SerializeField] private float bagThrowForwardMin = 2f;
-    [SerializeField] private float bagThrowForwardMax = 8f;
-    [SerializeField] private float bagThrowUpMin = 0.8f;
-    [SerializeField] private float bagThrowUpMax = 2.5f;
-    [SerializeField] private float bagSpinMin = 2f;
-    [SerializeField] private float bagSpinMax = 8f;
 
     private NetworkClubEquipment clubEquip;
     private NetworkGolfBagCarry cachedBag;

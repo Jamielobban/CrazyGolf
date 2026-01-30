@@ -13,9 +13,8 @@ public class SwingLockOrbitNet : NetworkBehaviour
     [SerializeField] private float clubheadDisableGrace = 0.25f;
     private float reenableClubheadAtServer = -1f;
 
-    [Header("Snap Offsets (meters) - FOR CLUBHEAD TARGET")]
-    [SerializeField] private float backOffset = 1.2f;
-    [SerializeField] private float sideOffset = 0.35f;
+    private float backOffset;
+    private float sideOffset;
 
     [Header("Validation")]
     [SerializeField] private float maxSnapDistance = 3.0f;
@@ -326,11 +325,4 @@ public class SwingLockOrbitNet : NetworkBehaviour
         if (clubHeadColliderServer != null)
             clubHeadColliderServer.enabled = true;
     }
-    // tune -> driver longer, harder anti park, higher curve capacity
-    // iron -> more static, higher loft capacity
-    // putter -> completely static, straight line pretty much
-    // what changes between these actual clubs can i do? 
-    // i should do 3 courses, 1 for driver, 1 for iron, 1 for putter
-
-    // putter needs ot be mostly straight feel no curve no lift, mostly just ong rass going foward. 
 }
