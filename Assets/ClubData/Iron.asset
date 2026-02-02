@@ -90,6 +90,6 @@ MonoBehaviour:
     m_RotationOrder: 4
   minImpulse: 1
   maxImpulse: 24
-  curveMaxAbs: 0.35
-  curveEffectiveness: 0.85
+  curveMaxAbs: 1
+  curveEffectiveness: 1
   launchBiasMaxAbsDeg: 30

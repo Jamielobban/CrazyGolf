@@ -207,7 +207,7 @@ MonoBehaviour:
   groundCheckRadius: 0.06
   groundCheckDistance: 0.25
   groundCheckUpOffset: 0.03
-  useLaunchRamp: 1
+  useLaunchRamp: 0
   launchRampDuration: 0.15
   launchRampCurve:
     serializedVersion: 2

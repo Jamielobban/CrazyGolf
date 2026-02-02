@@ -30,6 +30,8 @@ public class ClubBallContactLogger : MonoBehaviour
 
     [SerializeField] private GolferContextLink link;
 
+    public float CurveIntent01 => curveIntent01;
+
     private float nextAllowedTime;
 
     private void Awake()

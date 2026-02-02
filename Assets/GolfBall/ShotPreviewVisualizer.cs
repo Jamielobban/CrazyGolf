@@ -1,68 +1,51 @@
 using UnityEngine;
 
 /// <summary>
-/// Local-only shot preview visualizer.
-/// - Spawns (renders) from the BALL position (not camera).
-/// - Aims using a provided aim transform (ex: swingPlane/swingPivot) OR clubhead velocity.
-/// - Uses ClubData to pick loft + impulse (ideal strike).
-/// - Simulates ballistic arc + simple ground roll + optional ground snapping.
-/// 
-/// IMPORTANT: This is NOT networked and should not be a NetworkObject.
-/// Put it on the local player (or a local-only helper object).
+/// Local-only shot preview:
+/// - Starts at the BALL position.
+/// - Uses a STABLE aim transform for direction (assign swingPlane/swingPivot/your fake aim).
+/// - Reads ClubData from GolferContextLink.
+/// - Reads curve intent directly from ClubBallContactLogger on the current club head.
+/// - Simulates only short flight (loft + curve shape). No landing/roll.
+///
+/// Not networked. Do NOT put this on a NetworkObject.
 /// </summary>
 [RequireComponent(typeof(LineRenderer))]
-public class ShotPreviewVisualizer : MonoBehaviour
+public class ShotPreviewVisualizerShort : MonoBehaviour
 {
-    public enum AimSource
-    {
-        AimTransformForward,
-        ClubHeadVelocity
-    }
+    [Header("Refs (same object)")]
+    [SerializeField] private GolferContextLink link;
 
-    [Header("Refs (assign on Player)")]
-    [SerializeField] private NetworkGolferPlayer golfer;          // your player script
-    [SerializeField] private NetworkClubEquipment equipment;      // has equippedClubId
-    [SerializeField] private ClubDatabase clubDb;                 // your DB asset
-    [SerializeField] private Transform aimTransform;              // swingPlane or swingPivot (recommended)
-    [SerializeField] private GolferContextLink link;   // optional, only if using ClubHeadVelocity aim
-    [SerializeField] private ClubHeadVelocity clubHeadVelocity;   // optional, only if using ClubHeadVelocity aim
+    [Header("Aim (stable)")]
+    [Tooltip("Use something stable like swingPlane forward, swingPivot forward, or a 'fake aim' transform you control.")]
+    [SerializeField] private Transform aimTransform;
 
-    [Header("Show rules")]
-    [SerializeField] private bool showOnlyForOwner = true;
-    [SerializeField] private bool hideWhenBallMoving = true;
-    [SerializeField] private float localMovingSpeed = 0.12f; // m/s (client-side check)
-    [SerializeField] private bool hideWhenBallHeld = true;
+    [Header("Origin (ball)")]
+    [SerializeField] private float originLift = 0.03f;
+    [SerializeField] private float originForwardNudge = 0.02f;
 
-    [Header("Aim")]
-    [SerializeField] private AimSource aimSource = AimSource.AimTransformForward;
-    [SerializeField] private float aimFallbackYawDeg = 0f; // if aim direction degenerates
+    [Header("Preview length")]
+    [SerializeField] private float previewTime = 1.0f; // seconds simulated
+    [SerializeField] private int points = 26;
+    [SerializeField] private float gravity = 9.81f;
 
-    [Header("Origin")]
-    [SerializeField] private float originLift = 0.03f; // lifts the first point above grass
-    [SerializeField] private float startForwardNudge = 0.02f; // tiny forward offset to avoid line clipping into ball
-
-    [Header("Perfect strike assumptions")]
+    [Header("Assumed strike")]
     [Range(0f, 1f)]
     [SerializeField] private float previewPower01 = 1f; // 1 = maxImpulse
-    [SerializeField] private float loftBiasDeg = 0f;    // extra degrees for “nice strike” or attack angle
-    [SerializeField] private bool ignoreCurve = true;   // v1: straight preview
+    [SerializeField] private float loftBiasDeg = 0f;
 
-    [Header("Prediction quality")]
-    [SerializeField] private int maxPoints = 80;
-    [SerializeField] private float simDt = 0.04f;
-    [SerializeField] private float maxSimTime = 4.0f;
+    [Header("Curve preview (match your ball feel)")]
+    [SerializeField] private bool showCurve = true;
+    [SerializeField] private float curveAccel = 18f;
+    [SerializeField] private float minCurveFlatSpeed = 2f;
+    [SerializeField] private float curveRefFlatSpeed = 18f;
+    [SerializeField] private float maxCurveSpeedScale = 2f;
+    [SerializeField] private float curveVisualScale = 1.0f;
 
-    [Header("Approx physics")]
-    [SerializeField] private float gravity = 9.81f;
-    [SerializeField] private float groundRollDecel = 3.0f; // m/s^2
-    [SerializeField] private float groundStopSpeed = 0.25f;
-
-    [Header("Ground snapping")]
-    [SerializeField] private bool snapToGround = true;
-    [SerializeField] private LayerMask groundMask = ~0;
-    [SerializeField] private float groundRayUp = 1.5f;
-    [SerializeField] private float groundRayDown = 6.0f;
-    [SerializeField] private float groundClearance = 0.02f; // keep slightly above surface
+    [Header("Show rules")]
+    [SerializeField] private bool hideWhenBallHeld = true;
+    [SerializeField] private bool hideWhenBallMoving = true;
+    [SerializeField] private float localMovingSpeed = 0.12f;
 
     [Header("Controls")]
     [SerializeField] private KeyCode toggleKey = KeyCode.T;
@@ -71,13 +54,15 @@ public class ShotPreviewVisualizer : MonoBehaviour
     private LineRenderer lr;
     private bool isOn;
 
+    // cached per-frame
+    private ClubBallContactLogger loggerCached;
+
     private void Awake()
     {
         lr = GetComponent<LineRenderer>();
         lr.positionCount = 0;
 
-        if (!golfer) golfer = GetComponentInParent<NetworkGolferPlayer>();
-        if (!equipment) equipment = GetComponentInParent<NetworkClubEquipment>();
+        if (!link) link = GetComponent<GolferContextLink>();
 
         isOn = enabledByDefault;
     }
@@ -93,20 +78,21 @@ public class ShotPreviewVisualizer : MonoBehaviour
             return;
         }
 
-        if (!golfer || !equipment || !clubDb)
+        if (link == null || link.golfer == null)
         {
             SetVisible(false);
             return;
         }
 
-       // if (showOnlyForOwner && golfer is NetworkBehaviour nb && !nb.IsOwner)
-        //{
-           // SetVisible(false);
-           // return;
-        //}
+        // Only local owner should render their preview
+        if (!link.golfer.IsOwner)
+        {
+            SetVisible(false);
+            return;
+        }
 
-        // Resolve ball (you changed golfer.MyBall to NetworkGolfBallState)
-        NetworkGolfBallState ballState = golfer.MyBall;
+        // Need ball state (your golfer.MyBall is NetworkGolfBallState)
+        var ballState = link.golfer.MyBall;
         if (!ballState)
         {
             SetVisible(false);
@@ -119,14 +105,18 @@ public class ShotPreviewVisualizer : MonoBehaviour
             return;
         }
 
-        // If ball is moving, hide preview (client-side RB check)
         if (hideWhenBallMoving)
         {
             var rbBall = ballState.GetComponent<Rigidbody>();
             if (rbBall)
             {
+#if UNITY_6000_0_OR_NEWER
                 Vector3 v = rbBall.linearVelocity;
+#else
+                Vector3 v = rbBall.velocity;
+#endif
                 v.y = 0f;
+
                 if (v.magnitude > localMovingSpeed)
                 {
                     SetVisible(false);
@@ -135,31 +125,43 @@ public class ShotPreviewVisualizer : MonoBehaviour
             }
         }
 
-        // Resolve club data
-        int clubId = equipment.equippedClubId.Value;
-        ClubData cd = clubDb.Get(clubId);
-        if (!cd)
+        // Club data
+        ClubData cd = link.Data;
+        if (cd == null)
         {
             SetVisible(false);
             return;
         }
 
-        // Origin at ball (not camera)
+        // Aim direction must be stable
+        if (!aimTransform)
+        {
+            SetVisible(false);
+            return;
+        }
+
+        // NOTE: Your original had rawAim = -aimTransform.right.
+        // Keep it as-is, but if your aim looks backwards, swap to aimTransform.forward.
+        Vector3 rawAim = -aimTransform.right;
+
+        Vector3 pathDir = new Vector3(rawAim.x, 0f, rawAim.z);
+        if (pathDir.sqrMagnitude < 0.0001f)
+        {
+            SetVisible(false);
+            return;
+        }
+        pathDir.Normalize();
+
+        // Origin on the ball
         Vector3 origin = ballState.transform.position + Vector3.up * originLift;
+        origin += pathDir * originForwardNudge;
 
-        // Aim direction (flat XZ)
-        if (!TryGetPathDir(out Vector3 pathDir))
-        {
-            SetVisible(false);
-            return;
-        }
-
-        // Build launch direction using loft
+        // Launch direction from loft
         float loft = cd.loftDeg + loftBiasDeg;
         Vector3 launchDir = ApplyLoft(pathDir, loft).normalized;
 
-        // Convert impulse -> initial velocity
-        Rigidbody rb = ballState.GetComponent<Rigidbody>();
+        // Convert impulse -> initial velocity (dv = impulse / mass)
+        var rb = ballState.GetComponent<Rigidbody>();
         if (!rb)
         {
             SetVisible(false);
@@ -167,176 +169,101 @@ public class ShotPreviewVisualizer : MonoBehaviour
         }
 
         float impulse = Mathf.Lerp(cd.minImpulse, cd.maxImpulse, Mathf.Clamp01(previewPower01));
-        Vector3 v0 = launchDir * (impulse / Mathf.Max(0.0001f, rb.mass));
+        float mass = Mathf.Max(0.0001f, rb.mass);
 
-        // Tiny nudge forward so the line doesn’t visually start inside the ball mesh
-        origin += pathDir * startForwardNudge;
+        Vector3 v0 = launchDir * (impulse / mass);
 
-        // Predict and draw
-        PredictAndDraw(origin, v0);
+        // Curve intent from logger on club head
+        float curve01 = 0f;
+        if (showCurve)
+        {
+            curve01 = ReadCurveIntent01() * curveVisualScale;
+            curve01 = Mathf.Clamp(curve01, -1f, 1f);
+        }
 
+        // Draw
+        PredictAndDraw(origin, v0, curve01);
         SetVisible(true);
     }
 
-    private void SetVisible(bool v)
+    private float ReadCurveIntent01()
     {
-        if (lr.enabled != v)
-            lr.enabled = v;
+        // Find logger on the current club head (assigned by your binder)
+        Transform head = link.ClubHead;
+        if (!head) return 0f;
 
-        if (!v)
-            lr.positionCount = 0;
+        // Cache if still valid
+        if (loggerCached == null || loggerCached.transform != head)
+            loggerCached = head.GetComponentInChildren<ClubBallContactLogger>(true);
+
+        if (!loggerCached) return 0f;
+
+        // Your logger needs a public getter like:
+        // public float CurveIntent01 => curveIntent01;
+        return loggerCached.CurveIntent01;
     }
 
-    private bool TryGetPathDir(out Vector3 pathDir)
+    private void PredictAndDraw(Vector3 p0, Vector3 v0, float curve01)
     {
-        pathDir = Vector3.forward;
+        int n = Mathf.Clamp(points, 6, 128);
+        lr.positionCount = n;
 
-        Vector3 raw;
-
-        if (aimSource == AimSource.ClubHeadVelocity)
-        {
-            if (!clubHeadVelocity)
-                clubHeadVelocity = link.ClubHead.GetComponent<ClubHeadVelocity>();
-
-            if (!clubHeadVelocity)
-                return false;
-
-            raw = clubHeadVelocity.VelocityWorld;
-        }
-        else
-        {
-            if (!aimTransform)
-                return false;
-
-            raw = aimTransform.forward;
-        }
-
-        Vector3 flat = new Vector3(raw.x, 0f, raw.z);
-
-        if (flat.sqrMagnitude < 0.0001f)
-        {
-            // Fallback: world yaw
-            pathDir = Quaternion.Euler(0f, aimFallbackYawDeg, 0f) * Vector3.forward;
-            return true;
-        }
-
-        pathDir = flat.normalized;
-        return true;
-    }
-
-    private static Vector3 ApplyLoft(Vector3 flatDir, float loftDeg)
-    {
-        Vector3 right = Vector3.Cross(flatDir, Vector3.up);
-        if (right.sqrMagnitude < 0.0001f) right = Vector3.right;
-        right.Normalize();
-
-        return Quaternion.AngleAxis(loftDeg, right) * flatDir;
-    }
-
-    private void PredictAndDraw(Vector3 p0, Vector3 v0)
-    {
-        int pts = Mathf.Clamp(maxPoints, 8, 256);
-        lr.positionCount = pts;
+        float dt = Mathf.Max(0.001f, previewTime / (n - 1));
 
         Vector3 p = p0;
         Vector3 v = v0;
 
-        float t = 0f;
-        bool grounded = false;
-
-        for (int i = 0; i < pts; i++)
+        for (int i = 0; i < n; i++)
         {
-            if (snapToGround)
-                p = SnapPointToGround(p, grounded);
-
             lr.SetPosition(i, p);
 
-            // End early if too long
-            t += simDt;
-            if (t > maxSimTime)
-            {
-                FillRest(i + 1, pts, p);
-                return;
-            }
+            // gravity
+            v += Vector3.down * gravity * dt;
 
-            if (!grounded)
-            {
-                // Airborne ballistic
-                v += Vector3.down * gravity * simDt;
-                Vector3 pNext = p + v * simDt;
+            // curve (air-only)
+            if (showCurve && Mathf.Abs(curve01) > 0.0001f)
+                ApplyCurveAcceleration(ref v, curve01, dt);
 
-                if (snapToGround && WouldHitGround(p, pNext))
-                {
-                    grounded = true;
-                    // Land: clamp to ground and remove vertical velocity
-                    pNext = SnapPointToGround(pNext, true);
-                    v.y = 0f;
-                }
-
-                p = pNext;
-            }
-            else
-            {
-                // Rolling
-                Vector3 vFlat = new Vector3(v.x, 0f, v.z);
-                float spd = vFlat.magnitude;
-
-                if (spd <= groundStopSpeed)
-                {
-                    v = Vector3.zero;
-                    FillRest(i + 1, pts, p);
-                    return;
-                }
-
-                Vector3 dir = vFlat / spd;
-                float newSpd = Mathf.Max(0f, spd - groundRollDecel * simDt);
-                Vector3 vFlatNew = dir * newSpd;
-
-                v = new Vector3(vFlatNew.x, 0f, vFlatNew.z);
-                p += v * simDt;
-            }
+            p += v * dt;
         }
     }
 
-    private void FillRest(int start, int count, Vector3 p)
+    private void ApplyCurveAcceleration(ref Vector3 v, float curve01, float dt)
     {
-        for (int k = start; k < count; k++)
-            lr.SetPosition(k, p);
+        Vector3 vFlat = new Vector3(v.x, 0f, v.z);
+        float flatSpd = vFlat.magnitude;
+        if (flatSpd < minCurveFlatSpeed) return;
+
+        Vector3 forwardFlat = vFlat / Mathf.Max(0.0001f, flatSpd);
+        Vector3 side = Vector3.Cross(Vector3.up, forwardFlat);
+        side.y = 0f;
+
+        if (side.sqrMagnitude < 0.0001f) return;
+
+        side.Normalize();
+        side *= Mathf.Sign(curve01); // left/right
+
+        float refSpd = Mathf.Max(0.001f, curveRefFlatSpeed);
+        float speedScale = (flatSpd * flatSpd) / (refSpd * refSpd);
+        speedScale = Mathf.Clamp(speedScale, 0f, maxCurveSpeedScale);
+
+        Vector3 a = side * (curveAccel * speedScale * Mathf.Abs(curve01));
+        v += a * dt;
     }
 
-    private Vector3 SnapPointToGround(Vector3 p, bool alreadyGrounded)
+    private static Vector3 ApplyLoft(Vector3 flatDir, float loftDeg)
     {
-        if (!snapToGround) return p;
+        // Rotate around the "right" axis for that flat direction
+        Vector3 right = Vector3.Cross(flatDir, Vector3.up);
+        if (right.sqrMagnitude < 0.0001f) right = Vector3.right;
 
-        Vector3 start = p + Vector3.up * groundRayUp;
-        float dist = groundRayUp + groundRayDown;
-
-        if (Physics.Raycast(start, Vector3.down, out var hit, dist, groundMask, QueryTriggerInteraction.Ignore))
-        {
-            float y = hit.point.y + groundClearance;
-
-            // If airborne, don’t “snap up” to cliffs above us; only clamp downwards
-            if (!alreadyGrounded && y > p.y)
-                return p;
-
-            p.y = y;
-        }
-
-        return p;
+        right.Normalize();
+        return Quaternion.AngleAxis(loftDeg, right) * flatDir;
     }
 
-    private bool WouldHitGround(Vector3 pA, Vector3 pB)
+    private void SetVisible(bool v)
     {
-        // If we’re going downward and the ground under B is above B.y, treat as landing
-        Vector3 start = pB + Vector3.up * groundRayUp;
-        float dist = groundRayUp + groundRayDown;
-
-        if (Physics.Raycast(start, Vector3.down, out var hit, dist, groundMask, QueryTriggerInteraction.Ignore))
-        {
-            float groundY = hit.point.y + groundClearance;
-            return pB.y <= groundY + 0.01f;
-        }
-
-        return false;
+        if (lr.enabled != v) lr.enabled = v;
+        if (!v) lr.positionCount = 0;
     }
 }
